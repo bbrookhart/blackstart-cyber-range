@@ -5,7 +5,7 @@ description = "A consequence-driven cyber-physical resilience range for critical
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
-authors = [{ name = "BLACKSTART Research" }]
+authors = [{ name = "Brian Brookhart" }]
 keywords = ["ics", "ot", "cyber-physical", "resilience", "consequence-driven", "research"]
 classifiers = [
   "Development Status :: 3 - Alpha",

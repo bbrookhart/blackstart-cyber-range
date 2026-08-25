@@ -542,6 +542,7 @@ utility or vendor is claimed or implied.
 @software{blackstart_2026,
   title  = {BLACKSTART: A Consequence-Driven Cyber-Physical Resilience Range
             for Critical Infrastructure Under Compromise},
+  author = {Brookhart, Brian},
   year   = {2026},
   version = {0.1.0},
   license = {Apache-2.0},
@@ -549,9 +550,8 @@ utility or vendor is claimed or implied.
 }
 ```
 
-Machine-readable metadata: [CITATION.cff](CITATION.cff). Author identity is a
-placeholder — replace it before citing rather than attributing the work to a
-fabricated author.
+Machine-readable metadata: [CITATION.cff](CITATION.cff). No affiliation or ORCID
+is recorded; both are omitted rather than guessed.
 
 ---
 

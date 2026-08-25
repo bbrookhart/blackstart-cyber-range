@@ -18,12 +18,12 @@ date-released: "2026-08-24"
 license: Apache-2.0
 repository-code: "https://github.com/bbrookhart/blackstart-cyber-range"
 
-# Author identity is not recorded in this repository. Replace this placeholder
-# with real author metadata before citing or publishing. A fabricated author,
-# affiliation or ORCID would be worse than an obvious placeholder.
+# No affiliation or ORCID is recorded. Both are omitted rather than guessed --
+# a fabricated affiliation or identifier would be worse than an absent one.
 authors:
-  - name: "BLACKSTART Research"
-    # Replace with real author metadata before citing.
+  - family-names: "Brookhart"
+    given-names: "Brian"
+    alias: "bbrookhart"
 
 keywords:
   - industrial control systems
