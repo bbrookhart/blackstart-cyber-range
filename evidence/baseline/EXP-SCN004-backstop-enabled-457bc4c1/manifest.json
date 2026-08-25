@@ -1,0 +1,69 @@
+{
+  "artifacts": {
+    "configuration.json": {
+      "bytes": 14484,
+      "sha256": "e96727380cd90b67b077917a7078d0067c8dbed108fdbe74b13202aeda3c1da4"
+    },
+    "consequences.json": {
+      "bytes": 661,
+      "sha256": "223da3e239a1f51a9090b420921925c48e4ee06b3663fe56bd49062c294674c9"
+    },
+    "events.jsonl": {
+      "bytes": 694070,
+      "sha256": "e3e7e3b942779105815a1be257faa2edf261d5c501463d495e6fc39214320887"
+    },
+    "invariants.json": {
+      "bytes": 1429,
+      "sha256": "aac1b75a1932e8bbd78f261c0e301fb85edf3d612e8771c48762658813f3edd5"
+    },
+    "metrics.json": {
+      "bytes": 1943,
+      "sha256": "9ed983d626f17286f456ce7f746632d05052edbab45096d70fe756ec01d34a1f"
+    },
+    "process.csv": {
+      "bytes": 312506,
+      "sha256": "a44cb80ff50e02fc525ab060b328a43705715dbe220da6975c025ef76882f93a"
+    },
+    "summary.md": {
+      "bytes": 3772,
+      "sha256": "91561bce638d81502dae310171693a97e032bd4c4a037ff2fa10c98c33b288b2"
+    }
+  },
+  "blackstart_version": "0.1.0",
+  "determinism": {
+    "configuration_hash": "457bc4c133224fc67e27bba710a13def998b9adeaa0b8b36243a8c58b6a9d575",
+    "duration_s": 1200.0,
+    "seed": 4242,
+    "steps": 2400,
+    "timestep_s": 0.5
+  },
+  "experiment_id": "EXP-SCN004-backstop-enabled-457bc4c1",
+  "integrity": {
+    "algorithm": "sha256",
+    "digest": "2dd8c0fbe10ea282bf146ccb5f0780da4980967a55e0babd325953d0ced0b8c7",
+    "scope": "artifact digests only; provenance excluded"
+  },
+  "provenance": {
+    "generated_at": "2026-08-25T03:51:03+00:00",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.11"
+  },
+  "result": {
+    "maximum_consequence": "C1",
+    "service_availability_pct": 100.0,
+    "unsafe_state_duration_s": 0.0,
+    "violated_invariants": [
+      "INV-004"
+    ]
+  },
+  "scenario": {
+    "category": "cyber-effect",
+    "id": "SCN-004",
+    "name": "Unauthorised setpoint mutation",
+    "research_question": "Given that an adversary has achieved unauthorised control influence, which engineered constraint prevents that influence from becoming an unacceptable physical consequence?"
+  },
+  "variant": {
+    "backstop_enabled": true,
+    "name": "backstop-enabled"
+  }
+}

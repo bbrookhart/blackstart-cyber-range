@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620"
+     role="img" aria-labelledby="t d">
+  <title id="t">Cyber-to-physical consequence path, with and without the engineering constraint</title>
+  <desc id="d">Two parallel chains. Without the engineering constraint, a compromised operator
+  command propagates through a changed setpoint and controller action to increased inflow, an
+  unsafe tank level, an INV-001 violation and a C4 consequence. With the constraint, the command
+  is clamped before the controller acts and the outcome is a C1 minor deviation.</desc>
+  <style>
+    .bg{fill:#FFFFFF} .fg{fill:#1B2430} .mut{fill:#5A6B7C}
+    .panel{fill:#F7F9FB;stroke:#DDE4EA}
+    .box{fill:#FFFFFF;stroke:#B9C4CE}
+    .arrow{stroke:#8595A4}
+    @media (prefers-color-scheme: dark) {
+      .bg{fill:#0B1017} .fg{fill:#EAF1F7} .mut{fill:#8FA6BB}
+      .panel{fill:#101922;stroke:#22303D}
+      .box{fill:#0F171F;stroke:#3A4E60}
+      .arrow{stroke:#5B7186}
+    }
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .lbl{font-size:12.5}
+    .cap{font-size:10.5;letter-spacing:1.1}
+  </style>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8595A4"/>
+    </marker>
+    <marker id="ah-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2E7D66"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="620"/>
+  <rect class="panel" x="0.5" y="0.5" width="1199" height="619" rx="4"/>
+
+  <text class="fg" x="48" y="42" font-size="16" font-weight="700" letter-spacing="2.4">CYBER → PHYSICAL CONSEQUENCE PATH</text>
+  <text class="mut" x="48" y="63" font-size="12">SCN-004 · measured outcomes from evidence/baseline/</text>
+
+  <line x1="600" y1="88" x2="600" y2="580" class="arrow" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>
+
+  <!-- ================= LEFT: without the constraint ================= -->
+  <text x="290" y="112" text-anchor="middle" class="cap" fill="#C0392B" font-weight="700">WITHOUT ENGINEERING CONSTRAINT</text>
+
+  <g transform="translate(110,132)">
+    <rect class="box" x="0" y="0" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="26" text-anchor="middle">Compromised operator command</text>
+    <line x1="180" y1="42" x2="180" y2="64" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect class="box" x="0" y="66" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="92" text-anchor="middle">Setpoint changed to 4.80 m</text>
+    <line x1="180" y1="108" x2="180" y2="130" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect class="box" x="0" y="132" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="158" text-anchor="middle">Controller pursues the setpoint</text>
+    <line x1="180" y1="174" x2="180" y2="196" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect class="box" x="0" y="198" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="224" text-anchor="middle">Sustained inflow, level rises</text>
+    <line x1="180" y1="240" x2="180" y2="262" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="0" y="264" width="360" height="42" rx="3" fill="#C0392B" fill-opacity="0.10" stroke="#C0392B"/>
+    <text class="fg lbl" x="180" y="290" text-anchor="middle">Unsafe tank level — peak 5.00 m</text>
+    <line x1="180" y1="306" x2="180" y2="328" stroke="#C0392B" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="0" y="330" width="360" height="42" rx="3" fill="#C0392B" fill-opacity="0.10" stroke="#C0392B"/>
+    <text class="fg lbl" x="180" y="356" text-anchor="middle">INV-001 violated at t = 560.5 s</text>
+    <line x1="180" y1="372" x2="180" y2="394" stroke="#C0392B" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="0" y="396" width="360" height="56" rx="3" fill="#C0392B" fill-opacity="0.18" stroke="#C0392B" stroke-width="1.6"/>
+    <text x="180" y="420" text-anchor="middle" font-size="17" font-weight="700" fill="#C0392B" letter-spacing="2">C4</text>
+    <text class="mut" x="180" y="440" text-anchor="middle" font-size="11">UNSAFE PHYSICAL STATE</text>
+
+    <text class="mut" x="180" y="472" text-anchor="middle" font-size="11">639.5 s unsafe · 3.38 m³ spilled · 46.71% availability</text>
+  </g>
+
+  <!-- ================= RIGHT: with the constraint ================= -->
+  <text x="910" y="112" text-anchor="middle" class="cap" fill="#2E7D66" font-weight="700">WITH ENGINEERING CONSTRAINT</text>
+
+  <g transform="translate(730,132)">
+    <rect class="box" x="0" y="0" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="26" text-anchor="middle">Compromised operator command</text>
+    <line x1="180" y1="42" x2="180" y2="64" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect class="box" x="0" y="66" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="92" text-anchor="middle">Setpoint requested at 4.80 m</text>
+    <line x1="180" y1="108" x2="180" y2="130" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <!-- The constraint -->
+    <rect x="0" y="132" width="360" height="58" rx="3" fill="#2E7D66" fill-opacity="0.12" stroke="#2E7D66" stroke-width="1.8"/>
+    <text x="180" y="154" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E7D66">EBS-001 · BS-01 SETPOINT CLAMP</text>
+    <text class="mut" x="180" y="174" text-anchor="middle" font-size="10.5">applied upstream of the controller · 2040 activations</text>
+    <line x1="180" y1="190" x2="180" y2="212" stroke="#2E7D66" stroke-width="1.5" marker-end="url(#ah-stop)"/>
+
+    <rect class="box" x="0" y="214" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="240" text-anchor="middle">Effective setpoint clamped to 3.60 m</text>
+    <line x1="180" y1="256" x2="180" y2="278" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect class="box" x="0" y="280" width="360" height="42" rx="3"/>
+    <text class="fg lbl" x="180" y="306" text-anchor="middle">Controller stops the pump at 4.00 m</text>
+    <line x1="180" y1="322" x2="180" y2="344" class="arrow" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="0" y="346" width="360" height="42" rx="3" fill="#2E7D66" fill-opacity="0.10" stroke="#2E7D66"/>
+    <text class="fg lbl" x="180" y="372" text-anchor="middle">INV-001 never violated — 0.50 m margin</text>
+    <line x1="180" y1="388" x2="180" y2="410" stroke="#2E7D66" stroke-width="1.5" marker-end="url(#ah-stop)"/>
+
+    <rect x="0" y="412" width="360" height="56" rx="3" fill="#2E7D66" fill-opacity="0.18" stroke="#2E7D66" stroke-width="1.6"/>
+    <text x="180" y="436" text-anchor="middle" font-size="17" font-weight="700" fill="#2E7D66" letter-spacing="2">C1</text>
+    <text class="mut" x="180" y="456" text-anchor="middle" font-size="11">MINOR OPERATIONAL DEVIATION</text>
+
+    <text class="mut" x="180" y="488" text-anchor="middle" font-size="11">0.0 s unsafe · 0.00 m³ spilled · 100.00% availability</text>
+  </g>
+
+  <!-- Footnote: the honest caveat -->
+  <text class="mut" x="600" y="600" text-anchor="middle" font-size="11">
+    INV-004 is violated in BOTH cases: it observes the requested setpoint, so evidence that an implausible command was issued survives the constraint refusing it.
+  </text>
+</svg>

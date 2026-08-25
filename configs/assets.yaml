@@ -1,0 +1,257 @@
+# BLACKSTART — asset and dependency model
+#
+# The system-of-systems layer: what exists, what depends on what, and which
+# dependency paths can terminate in an unacceptable consequence.
+#
+# Edges are directed in the direction of CAUSAL INFLUENCE, not of data flow. An
+# edge A -> B means "a change in A can produce a change in B". That orientation
+# is what makes path queries answer the question the project cares about:
+# which digital components can influence which physical outcomes.
+#
+# `interrupted_by` marks an edge that the engineering backstop breaks. Those
+# annotations drive the consequence-path-reduction metric, and each one is
+# asserted against the implementation by tests/unit/test_graph_mitigations.py --
+# an edge cannot claim protection the code does not provide.
+
+schema_version: 1
+
+nodes:
+  # --- Mission ------------------------------------------------------------
+  - id: "CF-001"
+    node_class: "CriticalFunction"
+    label: "Maintain safe, sufficient water storage and delivery"
+    zone: "control"
+
+  - id: "PROC-001"
+    node_class: "PhysicalProcess"
+    label: "Storage and pumping process"
+    zone: "control"
+
+  # --- Physical assets ----------------------------------------------------
+  - id: "TNK-001"
+    node_class: "Asset"
+    label: "Storage tank"
+    zone: "control"
+  - id: "RES-001"
+    node_class: "Asset"
+    label: "Source reservoir"
+    zone: "control"
+  - id: "PMP-001"
+    node_class: "Actuator"
+    label: "Inlet pump"
+    zone: "control"
+  - id: "VLV-001"
+    node_class: "Actuator"
+    label: "Outlet control valve"
+    zone: "control"
+
+  # --- Instrumentation ----------------------------------------------------
+  - id: "LIT-001"
+    node_class: "Sensor"
+    label: "Tank level transmitter (operator channel)"
+    zone: "control"
+  - id: "LIT-002"
+    node_class: "Sensor"
+    label: "Independent level element (backstop channel)"
+    zone: "control"
+  - id: "FIT-001"
+    node_class: "Sensor"
+    label: "Flow meter"
+    zone: "control"
+
+  # --- Control ------------------------------------------------------------
+  - id: "PLC-001"
+    node_class: "Asset"
+    label: "Programmable controller"
+    zone: "control"
+  - id: "CTRL-LEVEL"
+    node_class: "ControlFunction"
+    label: "Hysteresis level control"
+    zone: "control"
+  - id: "CTRL-RESERVE"
+    node_class: "ControlFunction"
+    label: "Reserve protection (outlet throttling)"
+    zone: "control"
+  - id: "EBS-001"
+    node_class: "ControlFunction"
+    label: "Engineering backstop (independent command constraint)"
+    zone: "control"
+
+  # --- Services -----------------------------------------------------------
+  - id: "HMI-001"
+    node_class: "Service"
+    label: "Operator HMI"
+    zone: "ot"
+  - id: "HIST-001"
+    node_class: "Service"
+    label: "Process historian"
+    zone: "ot"
+  - id: "BRK-001"
+    node_class: "Service"
+    label: "Industrial DMZ broker"
+    zone: "idmz"
+  - id: "EWS-001"
+    node_class: "Service"
+    label: "Enterprise reporting workstation"
+    zone: "enterprise"
+
+  # --- Identities ---------------------------------------------------------
+  - id: "ID-OPERATOR"
+    node_class: "Identity"
+    label: "Operator account (supervisory zone)"
+    zone: "ot"
+  - id: "ID-ENGINEER"
+    node_class: "Identity"
+    label: "Engineering account (configuration authority)"
+    zone: "ot"
+
+edges:
+  # --- Digital command chain ----------------------------------------------
+  - from: "EWS-001"
+    to: "BRK-001"
+    relation: "COMMUNICATES_WITH"
+    note: "CDT-001, read-only pull."
+  - from: "BRK-001"
+    to: "HIST-001"
+    relation: "COMMUNICATES_WITH"
+    note: "CDT-002, read-only pull."
+  - from: "HIST-001"
+    to: "HMI-001"
+    relation: "COMMUNICATES_WITH"
+    note: "CDT-003."
+  - from: "ID-OPERATOR"
+    to: "HMI-001"
+    relation: "ENABLES"
+    note: "Operator authority to set the level setpoint."
+  - from: "ID-ENGINEER"
+    to: "EBS-001"
+    relation: "ENABLES"
+    note: >-
+      Engineering authority over backstop configuration. Modelled as an
+      out-of-band change, not a runtime command path -- the backstop cannot be
+      reconfigured through HMI-001 or PLC-001.
+  - from: "HMI-001"
+    to: "PLC-001"
+    relation: "COMMUNICATES_WITH"
+    note: "CDT-004. The only path on which a control command travels."
+  - from: "PLC-001"
+    to: "CTRL-LEVEL"
+    relation: "ENABLES"
+  - from: "PLC-001"
+    to: "CTRL-RESERVE"
+    relation: "ENABLES"
+
+  # --- Sensing ------------------------------------------------------------
+  - from: "PROC-001"
+    to: "LIT-001"
+    relation: "OBSERVES"
+    note: "Reverse of the observation relation: the process determines the reading."
+  - from: "PROC-001"
+    to: "LIT-002"
+    relation: "OBSERVES"
+  - from: "PROC-001"
+    to: "FIT-001"
+    relation: "OBSERVES"
+  - from: "LIT-001"
+    to: "CTRL-LEVEL"
+    relation: "ENABLES"
+    note: "Control acts on the operator level channel. Falsifying it steers control."
+  - from: "LIT-001"
+    to: "CTRL-RESERVE"
+    relation: "ENABLES"
+  - from: "LIT-001"
+    to: "HMI-001"
+    relation: "ENABLES"
+    note: "Operator situational awareness."
+  - from: "LIT-002"
+    to: "EBS-001"
+    relation: "ENABLES"
+    note: >-
+      The backstop's independent measurement channel. Modelled as unaffected by
+      sensor.* effects; see docs/limitations.md for why that is an assumption.
+
+  # --- Actuation ----------------------------------------------------------
+  - from: "CTRL-LEVEL"
+    to: "EBS-001"
+    relation: "DEPENDS_ON"
+    note: "Every control request passes through the backstop before actuation."
+  - from: "CTRL-LEVEL"
+    to: "PMP-001"
+    relation: "CONTROLS"
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+    note: >-
+      The pump command path. This is the edge the engineering backstop breaks,
+      and the reason SCN-003 and SCN-004 end differently with it enabled.
+  - from: "CTRL-RESERVE"
+    to: "VLV-001"
+    relation: "CONTROLS"
+  - from: "EBS-001"
+    to: "PMP-001"
+    relation: "PROTECTS"
+    note: "Independent high-level trip and dry-run interlock."
+  - from: "PMP-001"
+    to: "PROC-001"
+    relation: "CONTROLS"
+  - from: "VLV-001"
+    to: "PROC-001"
+    relation: "CONTROLS"
+  - from: "RES-001"
+    to: "PROC-001"
+    relation: "ENABLES"
+  - from: "TNK-001"
+    to: "PROC-001"
+    relation: "ENABLES"
+
+  # --- Physical state to safety invariants --------------------------------
+  - from: "PROC-001"
+    to: "INV-001"
+    relation: "CAN_CAUSE"
+  - from: "PROC-001"
+    to: "INV-002"
+    relation: "CAN_CAUSE"
+  - from: "PROC-001"
+    to: "INV-003"
+    relation: "CAN_CAUSE"
+  - from: "CTRL-LEVEL"
+    to: "INV-004"
+    relation: "CAN_CAUSE"
+  - from: "LIT-001"
+    to: "INV-005"
+    relation: "CAN_CAUSE"
+    note: "Divergence of the operator channel from physical truth."
+
+  # --- Mission dependencies -----------------------------------------------
+  - from: "CF-001"
+    to: "PROC-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "TNK-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "PMP-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "VLV-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "RES-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "CTRL-LEVEL"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "PLC-001"
+    relation: "DEPENDS_ON"
+  - from: "CF-001"
+    to: "LIT-001"
+    relation: "DEPENDS_ON"
+
+# Mapping from safety invariant to the consequence class its violation produces.
+# Kept consistent with invariants.yaml (severity_on_violation) by
+# tests/unit/test_graph_build.py.
+invariant_consequences:
+  INV-001: "C4"
+  INV-002: "C3"
+  INV-003: "C4"
+  INV-004: "C1"
+  INV-005: "C1"

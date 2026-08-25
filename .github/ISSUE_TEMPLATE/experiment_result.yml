@@ -1,0 +1,46 @@
+name: Experiment result or reproduction failure
+description: A BLACKSTART experiment did not reproduce, or produced an unexpected result.
+labels: ["experiment", "reproducibility"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Reproducibility is the property this project is built around. A run that
+        does not reproduce is a defect, not a curiosity.
+  - type: input
+    id: experiment_id
+    attributes:
+      label: Experiment ID
+      description: From the evidence directory name, e.g. EXP-SCN004-backstop-enabled-2a9d37bd.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: BLACKSTART version
+      description: Output of `uv run blackstart --version`.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and Python version
+      description: From the `provenance` block of the experiment's manifest.json.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command run
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and actual result
+      description: >-
+        Include the relevant part of `metrics.json` and the output of
+        `blackstart evidence verify <id> --reproduce`.
+    validations:
+      required: true

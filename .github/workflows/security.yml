@@ -1,0 +1,145 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so a newly disclosed advisory in an unchanged dependency is still
+    # found. A dependency audit that only runs on change is a snapshot, not a
+    # control.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --frozen
+
+      - name: Export the resolved dependency set
+        run: |
+          uv export --frozen --no-emit-project --all-extras \
+            --format requirements-txt -o requirements-audit.txt
+
+      - name: Audit
+        run: uv run pip-audit --strict --requirement requirements-audit.txt
+
+  sbom:
+    name: SBOM generation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --frozen
+
+      - name: Generate a CycloneDX SBOM
+        run: |
+          uv export --frozen --no-emit-project --all-extras \
+            --format requirements-txt -o requirements-sbom.txt
+          uv run cyclonedx-py requirements requirements-sbom.txt \
+            --output-format JSON --output-file sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: sbom-cyclonedx
+          path: sbom.json
+          if-no-files-found: error
+
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --frozen
+
+      # Ruff's `S` ruleset is bandit. It runs in CI as part of lint; this job
+      # reports it separately so a security finding is visible as one.
+      - name: Security-focused lint (bandit rules via ruff)
+        run: uv run ruff check --select S --output-format=github .
+
+      # The scenario safety boundary (ADR-006) is enforced by tests, not by
+      # policy. Running them here makes a breach a security-job failure.
+      - name: Scenario safety boundary
+        run: uv run pytest tests/architecture -m architecture -q
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Full history so the scan covers more than the tip commit.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@83373cf2f8c4db6e24b41c1a9b086bb9619e9cd3 # v2.3.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  container-scan:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Build the service image
+        run: docker build -t blackstart/service:ci .
+
+      - name: Scan the image
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: blackstart/service:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

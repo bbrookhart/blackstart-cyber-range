@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380"
+     role="img" aria-labelledby="title desc">
+  <title id="title">BLACKSTART — Critical Infrastructure Under Compromise</title>
+  <desc id="desc">Programme wordmark over a schematic showing the causal chain from a cyber
+  event through control and physics to mission outcome, with an engineering constraint
+  positioned between control and physics.</desc>
+
+  <defs>
+    <!-- Faint engineering grid, the visual language of a process drawing. -->
+    <pattern id="bs-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#1B2733" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="bs-rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#2A3A4A" stop-opacity="0"/>
+      <stop offset="0.15" stop-color="#4A6076" stop-opacity="1"/>
+      <stop offset="0.85" stop-color="#4A6076" stop-opacity="1"/>
+      <stop offset="1"    stop-color="#2A3A4A" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bs-chain" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"   stop-color="#C6873B"/>
+      <stop offset="0.5" stop-color="#7E93A8"/>
+      <stop offset="1"   stop-color="#4E9C87"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Self-contained panel: the asset carries its own ground, so it renders
+       correctly against both light and dark README backgrounds. -->
+  <rect width="1200" height="380" fill="#0B1017"/>
+  <rect width="1200" height="380" fill="url(#bs-grid)" opacity="0.55"/>
+  <rect x="0.5" y="0.5" width="1199" height="379" fill="none" stroke="#22303D" stroke-width="1"/>
+
+  <!-- Corner registration marks -->
+  <g stroke="#3A4E60" stroke-width="1.5" fill="none">
+    <path d="M28 20V44M20 28H44"/>
+    <path d="M1172 20V44M1180 28H1156"/>
+    <path d="M28 360V336M20 352H44"/>
+    <path d="M1172 360V336M1180 352H1156"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="600" y="132" text-anchor="middle"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="76" font-weight="700" letter-spacing="17" fill="#EAF1F7">BLACKSTART</text>
+
+  <line x1="300" y1="163" x2="900" y2="163" stroke="url(#bs-rule)" stroke-width="1"/>
+
+  <text x="600" y="196" text-anchor="middle"
+        font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="14.5" letter-spacing="6.5" fill="#8FA6BB">CRITICAL INFRASTRUCTURE UNDER COMPROMISE</text>
+
+  <text x="600" y="232" text-anchor="middle"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="17" font-weight="600" letter-spacing="3.4" fill="#C6873B">ASSUME COMPROMISE. PRESERVE THE MISSION.</text>
+
+  <!-- Causal chain: cyber → control → physics → mission, with the engineering
+       constraint sitting between control and physics, which is the whole thesis. -->
+  <g transform="translate(0,300)">
+    <line x1="212" y1="0" x2="988" y2="0" stroke="url(#bs-chain)" stroke-width="2"/>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+       font-size="12.5" letter-spacing="3.6" text-anchor="middle">
+      <circle cx="212" cy="0" r="6.5" fill="#0B1017" stroke="#C6873B" stroke-width="2"/>
+      <text x="212" y="30" fill="#B9793A">CYBER</text>
+
+      <circle cx="470" cy="0" r="6.5" fill="#0B1017" stroke="#8B94A0" stroke-width="2"/>
+      <text x="470" y="30" fill="#8FA6BB">CONTROL</text>
+
+      <circle cx="730" cy="0" r="6.5" fill="#0B1017" stroke="#6E93A8" stroke-width="2"/>
+      <text x="730" y="30" fill="#8FA6BB">PHYSICS</text>
+
+      <circle cx="988" cy="0" r="6.5" fill="#0B1017" stroke="#4E9C87" stroke-width="2"/>
+      <text x="988" y="30" fill="#4E9C87">MISSION</text>
+    </g>
+
+    <!-- The engineering constraint, interposed on the control → physics link.
+         Its position in this diagram is the programme's entire thesis. -->
+    <g transform="translate(600,0)">
+      <line x1="0" y1="-24" x2="0" y2="-7" stroke="#5B7186" stroke-width="1.4"/>
+      <circle cx="0" cy="0" r="5" fill="#0B1017" stroke="#A9BDD0" stroke-width="2"/>
+      <rect x="-92" y="-50" width="184" height="26" rx="3"
+            fill="#101922" stroke="#5B7186" stroke-width="1.4"/>
+      <text x="0" y="-32" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+            font-size="10.5" letter-spacing="1.9" fill="#A9BDD0">ENGINEERING CONSTRAINT</text>
+    </g>
+  </g>
+</svg>

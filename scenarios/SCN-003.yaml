@@ -1,0 +1,60 @@
+# BLACKSTART scenario SCN-003
+id: "SCN-003"
+name: "Sensor integrity loss"
+category: "cyber-effect"
+seed: 2026
+duration_s: 1200.0
+
+research_question: >-
+  When the operator-facing level transmitter no longer reports physical reality,
+  can independent process evidence reveal the loss of trusted telemetry, and can
+  an independent measurement channel keep the process inside its safe envelope
+  while the operator's view is wrong?
+
+description: >-
+  The operator level transmitter begins reporting a constant negative offset. The
+  control system, which acts on reported level and has no other information,
+  concludes that storage is low and continues to call for the pump. Because the
+  reported level can never reach the upper band edge, the pump is never commanded
+  to stop.
+
+  Nothing about the physics changes. The tank fills, and the divergence between
+  what is happening and what is displayed grows.
+
+  Two questions are separable here and are measured separately: whether the
+  PROCESS stayed safe, and whether the OPERATOR was deceived. The engineering
+  backstop can address the first. It cannot address the second, and the results
+  show that clearly.
+
+events:
+  - t_s: 180.0
+    effect: "sensor.bias"
+    description: >-
+      Level transmitter reports 1.50 m below true level. Plausible, stable, and
+      wrong.
+    params:
+      bias_m: -1.50
+    attack_ics: ["T0832"]
+
+notes: >-
+  Mapped to T0832 (Manipulation of View) at the level of EFFECT. BLACKSTART
+  simulates a falsified reported value; it does not simulate any mechanism for
+  producing one. A falsified reporting message (T1692.002) is one candidate
+  mechanism among several, and is recorded as a candidate rather than asserted.
+  See framework-mappings/attack-ics.yaml.
+
+# Measured outcomes, populated from actual experiment runs and asserted by
+# tests/integration/test_scenario_expectations.py. A divergence means either the
+# implementation regressed or the design intent was wrong; both need
+# investigation rather than an updated number.
+expected:
+  backstop_disabled:
+    maximum_consequence: "C4"
+    violated_invariants: ["INV-001", "INV-005"]
+    service_availability_pct_min: 46.0
+    service_availability_pct_max: 47.5
+  backstop_enabled:
+    maximum_consequence: "C1"
+    violated_invariants: ["INV-004", "INV-005"]
+    service_availability_pct_min: 99.9
+    service_availability_pct_max: 100.0

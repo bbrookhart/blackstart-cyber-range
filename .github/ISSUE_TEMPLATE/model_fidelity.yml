@@ -1,0 +1,42 @@
+name: Model fidelity or methodology concern
+description: A physical, control, invariant, or consequence model appears wrong or misleading.
+labels: ["model-fidelity", "methodology"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        BLACKSTART's value depends on its models being defensible and its
+        limitations being stated. A concern that a model overstates what it can
+        support is as important as one that it is numerically wrong.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Physical process model (ADR-002)
+        - Control logic
+        - Engineering backstop (ADR-006)
+        - Safety invariants (ADR-004)
+        - Consequence taxonomy
+        - Dependency graph / consequence paths
+        - Metrics
+        - Framework mapping (ATT&CK, NIST, IEC)
+        - Stated limitation is missing or too weak
+    validations:
+      required: true
+  - type: textarea
+    id: concern
+    attributes:
+      label: The concern
+      description: What is modelled, what you believe is wrong, and why it matters to a conclusion.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting reasoning or references
+      description: >-
+        Public references are welcome. Please do NOT include real utility
+        parameters, configurations, or any non-public operational data.
+    validations:
+      required: true

@@ -1,0 +1,116 @@
+# BLACKSTART — consequence taxonomy
+#
+# Consequence severity is DERIVED each timestep from measurable process
+# conditions. No scenario, effect, or operator sets a consequence level directly;
+# the classifier is a pure function of state. See docs/consequence-model.md.
+#
+# Severity classes are ordered and the classifier reports the maximum class whose
+# conditions are satisfied. Escalation to C4/C5 requires physical evidence, not
+# narrative judgement -- these labels are deliberately hard to reach.
+
+schema_version: 1
+
+critical_function:
+  id: "CF-001"
+  statement: >-
+    Maintain sufficient water storage to satisfy synthetic demand while keeping
+    the process inside defined safe operating bounds.
+  satisfied_when:
+    # Both conditions must hold for the critical function to be counted as
+    # satisfied in the service-availability metric.
+    - "service_shortfall_ratio < 0.10"
+    - "no invariant in {INV-001, INV-002, INV-003} is VIOLATED"
+
+# Normal operating band. This is the control band (operator_setpoint_m +/-
+# deadband = 2.80..3.60 m) widened by a 0.10 m allowance for the overshoot any
+# hysteresis controller produces between scans. A band narrower than the control
+# system's own achievable envelope would classify correct operation as a
+# deviation. Excursion outside this band is a deviation, not yet a safety
+# condition.
+normal_band:
+  lower_m: 2.70
+  upper_m: 3.70
+
+consequences:
+  - level: "C0"
+    name: "Normal operation"
+    description: >-
+      Process inside the normal operating band, demand fully met, no invariant
+      in a non-OK state.
+    conditions:
+      all_of:
+        - metric: "level_in_normal_band"
+          equals: true
+        - metric: "service_shortfall_ratio"
+          less_than: 0.02
+        - metric: "violated_invariant_count"
+          equals: 0
+
+  - level: "C1"
+    name: "Minor operational deviation"
+    description: >-
+      Process outside the normal band but within safe bounds, a brief service
+      shortfall, or a detected divergence between reported and true telemetry.
+      Operationally noteworthy; mission not impaired.
+    conditions:
+      any_of:
+        - metric: "level_in_normal_band"
+          equals: false
+        - metric: "service_shortfall_ratio"
+          at_least: 0.02
+        - metric: "violated_invariants"
+          includes_any: ["INV-004", "INV-005"]
+
+  - level: "C2"
+    name: "Service degradation"
+    description: >-
+      Delivered flow has fallen materially short of demand for a sustained
+      period. Customers experience reduced pressure and availability.
+    conditions:
+      all_of:
+        - metric: "service_shortfall_ratio"
+          at_least: 0.10
+          sustained_s: 60.0
+
+  - level: "C3"
+    name: "Loss of required service"
+    description: >-
+      Delivered flow has fallen below half of demand for a sustained period, or
+      the operational reserve has been lost beyond its tolerance. The critical
+      function CF-001 is not being performed.
+    conditions:
+      any_of:
+        - metric: "service_shortfall_ratio"
+          at_least: 0.50
+          sustained_s: 60.0
+        - metric: "violated_invariants"
+          includes_any: ["INV-002"]
+
+  - level: "C4"
+    name: "Unsafe physical state"
+    description: >-
+      The process has entered a state outside its safe operating envelope:
+      storage above the safe working level, or a pump operating without suction.
+      Equipment damage or loss of containment is now credible.
+    conditions:
+      any_of:
+        - metric: "violated_invariants"
+          includes_any: ["INV-001", "INV-003"]
+
+  - level: "C5"
+    name: "Catastrophic mission failure"
+    description: >-
+      Loss of containment at scale, or a prolonged unsafe state coincident with
+      loss of the required service. Reserved for outcomes that are not
+      recoverable within the operating period.
+    conditions:
+      any_of:
+        # Roughly one third of nominal tank volume (12 m2 * 5.0 m = 60 m3)
+        # discharged through the overflow weir.
+        - metric: "spill_volume_m3"
+          at_least: 20.0
+        - all_of:
+            - metric: "time_in_c4_s"
+              at_least: 300.0
+            - metric: "current_level"
+              at_least_class: "C3"

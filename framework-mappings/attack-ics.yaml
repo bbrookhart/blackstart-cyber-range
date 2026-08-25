@@ -1,0 +1,214 @@
+# BLACKSTART — MITRE ATT&CK for ICS mappings
+#
+# Mappings exist ONLY for behaviours BLACKSTART actually simulates. Where a
+# mapping is ambiguous, the ambiguity is recorded rather than resolved in the
+# project's favour.
+#
+# Two rules govern this file:
+#
+#   1. Never map a technique because its name sounds related to the outcome.
+#   2. An empty mapping is frequently the correct answer. A benign physical
+#      disturbance corresponds to no adversary technique, and saying so is more
+#      useful than inventing an association.
+#
+# LEVEL OF MAPPING. BLACKSTART simulates the EFFECT of a condition, not the
+# MECHANISM that produces it. Mappings are therefore made at the level of effect.
+# Where a technique describes a mechanism that could produce the modelled effect,
+# it is recorded under `candidate_mechanisms` and explicitly NOT asserted.
+
+schema_version: 1
+
+source:
+  framework: "MITRE ATT&CK for ICS"
+  url: "https://attack.mitre.org/matrices/ics/"
+  version: "v19.2"
+  retrieved_or_verified: "2026-08-24"
+  verification_method: >-
+    Each technique identifier below was requested directly from
+    attack.mitre.org on the date above and its canonical name and tactic read
+    from the response. Three identifiers considered during design (T0855, T0856,
+    T0804) were found to redirect to renumbered entries and are recorded under
+    `renumbered_upstream` rather than used in their obsolete form.
+
+# Identifiers that have been renumbered upstream. Recorded because published
+# material still commonly cites the old numbers, and a reviewer comparing this
+# file against an older source should not conclude the mapping is wrong.
+renumbered_upstream:
+  - former_id: "T0855"
+    current_id: "T1692.001"
+    current_name: "Unauthorized Message: Command Message"
+  - former_id: "T0856"
+    current_id: "T1692.002"
+    current_name: "Unauthorized Message: Reporting Message"
+  - former_id: "T0804"
+    current_id: "T1691.002"
+    current_name: "Block Operational Technology Message: Reporting Message"
+
+mappings:
+  - blackstart_behavior: "Supervisory level setpoint mutated outside legitimate operator action"
+    effect: "setpoint.override"
+    attack_technique_id: "T0836"
+    attack_technique_name: "Modify Parameter"
+    attack_tactic: "Impair Process Control"
+    evidence_source:
+      - "events.jsonl: scenario.event (effect=setpoint.override)"
+      - "events.jsonl: invariant.state (INV-004 VIOLATED, setpoint_slew_m_s)"
+      - "process.csv: requested_setpoint_m diverges from its legitimate value"
+    scenario_ids: ["SCN-004"]
+    rationale: >-
+      A control parameter that determines process setpoint is changed to a value
+      outside the safe operating envelope. This is the technique's description at
+      the level of effect. BLACKSTART does not model how the parameter was
+      changed.
+    confidence: "high"
+    retrieved_or_verified: "2026-08-24"
+
+  - blackstart_behavior: "Process driven outside safe bounds through the control system behaving as designed"
+    effect: "setpoint.override"
+    attack_technique_id: "T0831"
+    attack_technique_name: "Manipulation of Control"
+    attack_tactic: "Impact"
+    evidence_source:
+      - "process.csv: true_tank_level_m exceeds the INV-001 limit"
+      - "invariants.json: INV-001 violation intervals"
+      - "consequences.json: maximum_level C4"
+    scenario_ids: ["SCN-004"]
+    rationale: >-
+      The measured outcome is manipulation of the process itself: the controller
+      pursues an attacker-chosen target and the physical state leaves its safe
+      envelope. Mapped as the IMPACT of the modelled effect, distinct from the
+      T0836 mapping which describes the mechanism-level change.
+    confidence: "high"
+    retrieved_or_verified: "2026-08-24"
+
+  - blackstart_behavior: "Operator-facing level transmitter reports values inconsistent with physical truth"
+    effect: "sensor.bias, sensor.freeze"
+    attack_technique_id: "T0832"
+    attack_technique_name: "Manipulation of View"
+    attack_tactic: "Impact"
+    evidence_source:
+      - "process.csv: reported_tank_level_m diverges from true_tank_level_m"
+      - "invariants.json: INV-005 violation intervals"
+      - "events.jsonl: invariant.state (INV-005) with both views in `detail`"
+    scenario_ids: ["SCN-003"]
+    rationale: >-
+      The operator's view of the process is made to differ from reality in a way
+      that is stable and plausible. BLACKSTART measures the divergence directly
+      via INV-005, which reads both views.
+    candidate_mechanisms:
+      - id: "T1692.002"
+        name: "Unauthorized Message: Reporting Message"
+        note: >-
+          A falsified reporting message is ONE mechanism that could produce the
+          modelled effect. Others include transmitter compromise, calibration
+          tampering, and historian manipulation. BLACKSTART models none of them
+          and therefore does not assert this mapping.
+    confidence: "high for the effect; mechanism not modelled"
+    retrieved_or_verified: "2026-08-24"
+
+  - blackstart_behavior: "Supervisory telemetry path unavailable while local control continues"
+    effect: "supervisory.blackout"
+    attack_technique_id: "T0815"
+    attack_technique_name: "Denial of View"
+    attack_tactic: "Impact"
+    evidence_source:
+      - "events.jsonl: service.state (supervisory_available=false)"
+      - "process.csv: supervisory_available column"
+      - "metrics.json: supervisory_availability_pct"
+    scenario_ids: ["SCN-005"]
+    rationale: >-
+      The operator loses the ability to observe the process for a bounded period.
+      BLACKSTART reports supervisory availability as a metric distinct from
+      service availability, because loss of view and loss of control are
+      different conditions and conflating them overstates the impact.
+    candidate_mechanisms:
+      - id: "T1691.002"
+        name: "Block Operational Technology Message: Reporting Message"
+        note: >-
+          Blocked reporting messages is one candidate mechanism. Network
+          partition, service failure and historian outage are others. Not
+          asserted.
+    confidence: "high for the effect; mechanism not modelled"
+    retrieved_or_verified: "2026-08-24"
+
+# Scenarios deliberately carrying NO mapping. Recorded explicitly so that their
+# absence reads as a decision rather than an oversight.
+unmapped_scenarios:
+  - scenario_id: "SCN-001"
+    reason: >-
+      Nominal operation. No adversary behaviour is present. Mapping a baseline to
+      a technique would be meaningless.
+
+  - scenario_id: "SCN-002"
+    reason: >-
+      A benign demand surge. The scenario produces a genuine C2 service
+      consequence with zero invariant violations and no adversary involvement.
+      Mapping it to a technique because the outcome looks disruptive is exactly
+      the false association this file exists to avoid. SCN-002 is in fact the
+      control case proving BLACKSTART distinguishes disturbance from compromise.
+
+  - scenario_id: "SCN-006"
+    reason: >-
+      Source depletion modelled as a physical supply failure. No adversary
+      involvement. Deliberate water-supply interdiction would be a different
+      scenario requiring a different model.
+
+# Techniques considered during design and REJECTED, with reasons. This section
+# exists because rejected mappings are more informative about analytical
+# discipline than accepted ones.
+considered_and_rejected:
+  - attack_technique_id: "T0880"
+    attack_technique_name: "Loss of Safety"
+    attack_tactic: "Impact"
+    considered_for: ["SCN-003", "SCN-004"]
+    rejection_rationale: >-
+      The technique concerns the loss or disabling of safety systems and
+      mechanisms. In SCN-003 and SCN-004 the process enters an unsafe state while
+      the safety instrumentation remains fully intact and reporting correctly --
+      INV-001 detects and records the excursion throughout. Mapping this would be
+      an association based on the word "safety" rather than on the technique's
+      meaning.
+
+  - attack_technique_id: "T0826"
+    attack_technique_name: "Loss of Availability"
+    attack_tactic: "Impact"
+    considered_for: ["SCN-002", "SCN-006"]
+    rejection_rationale: >-
+      Both scenarios do reduce service availability, but neither involves an
+      adversary. Loss of availability arising from demand exceeding hydraulic
+      capacity, or from an empty source reservoir, is an operational event.
+      Mapping an ATT&CK technique to it would misattribute a physical failure to
+      adversary action.
+
+  - attack_technique_id: "T0829"
+    attack_technique_name: "Loss of View"
+    attack_tactic: "Impact"
+    considered_for: ["SCN-005"]
+    rejection_rationale: >-
+      T0815 (Denial of View) was preferred. BLACKSTART models a bounded,
+      recoverable interruption of the supervisory path with control unaffected,
+      which matches denial more closely than a persistent loss. The distinction
+      is fine and a reviewer might reasonably disagree; the choice is recorded
+      rather than presented as obvious.
+
+# Tactics BLACKSTART does not cover at all. Stated plainly: this is a large
+# majority of the ATT&CK for ICS matrix.
+uncovered_tactics:
+  - "Initial Access"
+  - "Execution"
+  - "Persistence"
+  - "Privilege Escalation"
+  - "Evasion"
+  - "Discovery"
+  - "Lateral Movement"
+  - "Collection"
+  - "Command and Control"
+  - "Inhibit Response Function"
+
+coverage_statement: >-
+  BLACKSTART v0.1 maps four techniques across two tactics (Impair Process
+  Control, Impact). It covers no part of the intrusion lifecycle. This is by
+  design -- the project studies what happens AFTER compromise is assumed -- and
+  is also a real limitation: BLACKSTART provides no evidence about detection or
+  prevention of any technique in the uncovered tactics above, and should not be
+  cited as though it did.

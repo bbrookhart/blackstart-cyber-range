@@ -1,0 +1,78 @@
+cff-version: 1.2.0
+message: "If you use BLACKSTART in academic or professional work, please cite it."
+title: "BLACKSTART: A Consequence-Driven Cyber-Physical Resilience Range for Critical Infrastructure Under Compromise"
+abstract: >-
+  BLACKSTART is a reproducible cyber-physical research environment for measuring
+  whether essential infrastructure functions can remain safe, observable,
+  recoverable and operational during sophisticated cyber compromise. It models a
+  fictional municipal water storage and pumping process as a deterministic
+  digital twin, evaluates explicit safety invariants against ground-truth
+  physical state, derives consequence severity from measurable conditions, and
+  compares outcomes with and without a simulated independent engineering
+  constraint. All infrastructure and parameters are synthetic. The environment
+  contains no exploitation tooling; adversarial conditions are represented as
+  bounded, declarative simulation effects.
+type: software
+version: "0.1.0"
+date-released: "2026-08-24"
+license: Apache-2.0
+repository-code: "https://github.com/blackstart-research/blackstart-cyber-range"
+
+# Author identity is not recorded in this repository. Replace this placeholder
+# with real author metadata before citing or publishing. A fabricated author,
+# affiliation or ORCID would be worse than an obvious placeholder.
+authors:
+  - name: "BLACKSTART Research"
+    alias: "blackstart-research"
+
+keywords:
+  - industrial control systems
+  - operational technology
+  - cyber-physical systems
+  - critical infrastructure
+  - consequence-driven engineering
+  - cyber range
+  - resilience
+  - reproducible research
+
+references:
+  - type: report
+    title: "Guide to Operational Technology (OT) Security"
+    abbreviation: "NIST SP 800-82 Rev. 3"
+    institution:
+      name: "National Institute of Standards and Technology"
+    year: 2023
+    notes: >-
+      Used as the principal OT security reference for architecture and risk
+      considerations. BLACKSTART claims no conformance or certification.
+  - type: report
+    title: "The Cybersecurity Framework (CSF) 2.0"
+    abbreviation: "NIST CSF 2.0"
+    institution:
+      name: "National Institute of Standards and Technology"
+    year: 2024
+    notes: >-
+      Outcomes are mapped for orientation only. No certification is claimed.
+  - type: report
+    title: "Incident Response Recommendations and Considerations for Cybersecurity Risk Management"
+    abbreviation: "NIST SP 800-61 Rev. 3"
+    institution:
+      name: "National Institute of Standards and Technology"
+    year: 2025
+  - type: database
+    title: "MITRE ATT&CK for ICS"
+    institution:
+      name: "The MITRE Corporation"
+    url: "https://attack.mitre.org/matrices/ics/"
+    notes: >-
+      Technique mappings were verified against attack.mitre.org on 2026-08-24
+      (ATT&CK v19.2). Mappings are made at the level of simulated effect and are
+      recorded with rationale in framework-mappings/attack-ics.yaml.
+  - type: generic
+    title: "Consequence-driven Cyber-informed Engineering (CCE)"
+    institution:
+      name: "Idaho National Laboratory"
+    notes: >-
+      BLACKSTART's consequence analysis is INFORMED BY consequence-driven
+      engineering principles. It is not an implementation of CCE, and no
+      endorsement or affiliation is implied.

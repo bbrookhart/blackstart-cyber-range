@@ -1,0 +1,99 @@
+# BLACKSTART — physical process configuration
+#
+# Fictional municipal water storage and pumping process.
+#
+# EVERY PARAMETER IN THIS FILE IS SYNTHETIC AND INVENTED. No real utility's
+# hydraulics, equipment ratings, setpoints or operating parameters were used or
+# consulted. See docs/research-integrity.md.
+#
+# Model and equations: docs/physical-model.md and ADR-002.
+# Unit conventions are encoded in field-name suffixes (_m, _m2, _m3_s, _s).
+
+schema_version: 1
+process_id: "WTR-001"
+description: "Single-tank storage and pumping process with gravity outlet."
+
+simulation:
+  # Fixed integration timestep. Must be far below the dominant process time
+  # constant tau = tank_area_m2 * pump_shutoff_head_m / pump_nominal_flow_m3_s
+  # (= 390 s here). Validated at configuration load; see test_timestep_stability.
+  timestep_s: 0.5
+  gravity_m_s2: 9.81
+
+tank:
+  # Vertical cylindrical storage tank, constant cross-section.
+  area_m2: 12.0
+  # Physical overtopping height. Above this, water leaves via the overflow weir
+  # and is accumulated as spill volume. Deliberately ABOVE the INV-001 safe
+  # maximum (4.50 m) so that a safety excursion is a representable, recoverable
+  # state rather than a clamped one. See ADR-002.
+  overflow_height_m: 5.00
+  initial_level_m: 3.20
+
+source:
+  # Upstream supply reservoir feeding the pump suction.
+  initial_level_m: 6.00
+  # Below this level the pump loses suction. It continues to draw current while
+  # delivering no flow -- the damaging dry-run condition INV-003 detects.
+  suction_limit_m: 0.50
+
+pump:
+  # Linear pump curve: q = q_nominal * (1 - L_tank / H_shutoff), clamped to >= 0.
+  # Delivered flow falls as the pump works against increasing static head.
+  nominal_flow_m3_s: 0.200
+  shutoff_head_m: 6.50
+  initial_state: "off"
+
+valve:
+  # Gravity discharge through a throttling valve, Torricelli:
+  #   q_capacity = position * discharge_coefficient * orifice_area_m2
+  #                * sqrt(2 * g * level)
+  discharge_coefficient: 0.62
+  orifice_area_m2: 0.020
+  initial_position: 1.00
+  # Maximum actuator slew. Bounds physically achievable transitions (INV-004).
+  max_slew_per_s: 0.10
+
+demand:
+  # Synthetic downstream consumption. Delivered flow is min(demand, capacity);
+  # any shortfall is emergent from the hydraulics, not a flag.
+  base_rate_m3_s: 0.035
+  # Fractional uniform variation drawn from the seeded experiment RNG.
+  variation_fraction: 0.10
+
+control:
+  # Hysteresis (bang-bang) level control acting on the REPORTED sensor level.
+  # The controller sees telemetry, not ground truth -- this separation is what
+  # makes SCN-003 measurable. See ADR-004.
+  operator_setpoint_m: 3.20
+  deadband_m: 0.40          # normal operating band: 2.80 m .. 3.60 m
+  scan_interval_s: 1.0
+  # Anti-cycling constraints protecting the pump motor.
+  min_run_time_s: 20.0
+  min_off_time_s: 30.0
+  # Reserve protection: the controller throttles the outlet valve to defend the
+  # operational reserve when storage runs low, trading delivered service for
+  # reserve volume. Hysteresis prevents valve hunting.
+  reserve_protection:
+    engage_level_m: 1.50
+    release_level_m: 1.80
+    throttled_position: 0.35
+
+sensors:
+  level_transmitter:
+    noise_std_m: 0.005
+    # Reported value is quantised to the transmitter's resolution.
+    resolution_m: 0.001
+  flow_meter:
+    noise_std_m3_s: 0.0002
+
+# Independent level element used only by the engineering backstop.
+#
+# ASSUMPTION, stated explicitly: this is modelled as a hardwired float/ultrasonic
+# element on a separate channel from the level transmitter, and is therefore NOT
+# affected by scenario effects in the `sensor.*` family. That independence is an
+# assumption of the model, not a proven property -- a real independent element
+# can itself be compromised. See docs/limitations.md and threat-model/assumptions.md.
+independent_level_element:
+  noise_std_m: 0.010
+  resolution_m: 0.010

@@ -1,0 +1,43 @@
+# BLACKSTART scenario SCN-001
+id: "SCN-001"
+name: "Nominal operation"
+category: "baseline"
+seed: 42
+duration_s: 900.0
+
+research_question: >-
+  What does correct operation look like, and does the instrument suite report
+  zero invariant violations and zero consequence when nothing is wrong?
+
+description: >-
+  Nominal process behaviour under synthetic variable demand. The hysteresis level
+  controller cycles the pump between the band edges; demand is met continuously;
+  the reported and true views of the process agree within transmitter noise.
+
+  This is the baseline every other result is read against. A range that cannot
+  demonstrate a clean baseline cannot support a claim about anything else: if
+  SCN-001 produced spurious violations, no violation in any other scenario would
+  be interpretable.
+
+events: []
+
+notes: >-
+  No scenario events and therefore no ATT&CK for ICS mapping. Recording an empty
+  mapping here is deliberate -- nominal operation corresponds to no adversary
+  technique, and saying so is more useful than inventing an association.
+
+# Measured outcomes, populated from actual experiment runs and asserted by
+# tests/integration/test_scenario_expectations.py. A divergence means either the
+# implementation regressed or the design intent was wrong; both need
+# investigation rather than an updated number.
+expected:
+  backstop_disabled:
+    maximum_consequence: "C0"
+    violated_invariants: []
+    service_availability_pct_min: 99.9
+    service_availability_pct_max: 100.0
+  backstop_enabled:
+    maximum_consequence: "C0"
+    violated_invariants: []
+    service_availability_pct_min: 99.9
+    service_availability_pct_max: 100.0

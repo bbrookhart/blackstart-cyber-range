@@ -1,0 +1,59 @@
+# BLACKSTART pre-commit hooks.
+#
+# Deliberately a subset of CI: fast checks that catch mistakes before they are
+# pushed. The authoritative gate is CI, not this file.
+#
+#   uv run pre-commit install
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      # A range whose evidence packages are secret has failed at its purpose,
+      # but a committed credential is still a defect.
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.4
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: scenario-schema
+        name: configuration and scenario schemas
+        entry: uv run python scripts/check_docs.py
+        language: system
+        pass_filenames: false
+        files: ^(configs|scenarios|docs|threat-model|framework-mappings)/
+
+      # The safety boundary is enforced by tests. Running them pre-commit means
+      # a contributor cannot widen it without noticing.
+      - id: safety-boundary
+        name: scenario safety boundary
+        entry: uv run pytest tests/architecture -m architecture -q
+        language: system
+        pass_filenames: false
+        files: ^(blackstart|services|docker-compose\.yml|Dockerfile|configs)/?

@@ -1,0 +1,57 @@
+# BLACKSTART scenario SCN-002
+id: "SCN-002"
+name: "Demand surge"
+category: "physical-disturbance"
+seed: 1337
+duration_s: 900.0
+
+research_question: >-
+  Can BLACKSTART distinguish an ordinary operational disturbance from a
+  cyber-originated condition, rather than treating any departure from nominal as
+  evidence of compromise?
+
+description: >-
+  A large but entirely benign increase in downstream consumption. Nothing digital
+  is manipulated: no setpoint changes, no telemetry is falsified, no service is
+  degraded by an adversary. The control system behaves correctly throughout and
+  the pump runs continuously in an attempt to keep up.
+
+  The hydraulics cannot deliver the requested flow at the resulting tank level,
+  so a genuine service consequence occurs. The safety envelope is never
+  approached.
+
+  This is the discriminating case for the whole project. A range that classifies
+  this as a security event is producing false positives; one that classifies it
+  as harmless is ignoring a real loss of service. The correct answer is a service
+  consequence with zero invariant violations and no cyber attribution.
+
+events:
+  - t_s: 180.0
+    effect: "demand.step"
+    duration_s: 480.0
+    description: "Sustained demand surge to roughly four times nominal consumption."
+    params:
+      rate_m3_s: 0.135
+    attack_ics: []
+
+notes: >-
+  ATT&CK for ICS mapping is deliberately empty. This scenario models a physical
+  disturbance with no adversary involvement; mapping it to a technique because
+  the outcome looks disruptive would be exactly the false association the
+  framework-mappings README warns against.
+
+# Measured outcomes, populated from actual experiment runs and asserted by
+# tests/integration/test_scenario_expectations.py. A divergence means either the
+# implementation regressed or the design intent was wrong; both need
+# investigation rather than an updated number.
+expected:
+  backstop_disabled:
+    maximum_consequence: "C2"
+    violated_invariants: []
+    service_availability_pct_min: 46.0
+    service_availability_pct_max: 47.5
+  backstop_enabled:
+    maximum_consequence: "C2"
+    violated_invariants: []
+    service_availability_pct_min: 46.0
+    service_availability_pct_max: 47.5

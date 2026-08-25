@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Generated artefacts
+sbom.json
+sbom.xml
+audit.json
+
+# Experiment output.
+# evidence/ is a committed directory (README + the checked-in baseline package).
+# Ad-hoc local runs land in evidence/local/ and are not committed.
+evidence/local/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+.hypothesis/

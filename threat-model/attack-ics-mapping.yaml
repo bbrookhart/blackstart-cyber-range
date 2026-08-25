@@ -1,0 +1,104 @@
+# BLACKSTART — adversary objectives mapped to modelled coverage
+#
+# This is the THREAT-MODEL view: what an adversary might be trying to achieve,
+# and whether BLACKSTART models it at all.
+#
+# The authoritative technique mappings -- with rationale, confidence, evidence
+# sources, candidate mechanisms, and rejected mappings -- live in
+# framework-mappings/attack-ics.yaml. This file does not restate them; it records
+# coverage and, more usefully, the gaps.
+#
+# tests/unit/test_attack_mapping.py asserts this file, the authoritative mapping
+# file, and the scenario definitions all agree.
+
+schema_version: 1
+authoritative_mappings: "../framework-mappings/attack-ics.yaml"
+attack_version: "v19.2"
+retrieved_or_verified: "2026-08-24"
+
+objectives:
+  - id: "OBJ-001"
+    objective: "Unauthorized control influence over the physical process"
+    modelled: true
+    scenario_ids: ["SCN-004"]
+    techniques: ["T0836", "T0831"]
+    engineered_mitigation: ["BS-01", "BS-02"]
+    measured_outcome: >-
+      Without the engineering constraint the process reaches C4 and INV-001 is
+      violated for 639.5 s. With it, C1 and no INV-001 violation.
+
+  - id: "OBJ-002"
+    objective: "Manipulation of the operator's understanding of the process"
+    modelled: true
+    scenario_ids: ["SCN-003"]
+    techniques: ["T0832"]
+    engineered_mitigation: ["BS-03"]
+    measured_outcome: >-
+      The independent high-level trip keeps the process safe (C4 -> C1), but
+      INV-005 is violated in BOTH variants. The constraint preserves the physical
+      mission and does NOT restore trust in telemetry.
+
+  - id: "OBJ-003"
+    objective: "Denial of the operator's view of the process"
+    modelled: true
+    scenario_ids: ["SCN-005"]
+    techniques: ["T0815"]
+    engineered_mitigation: []
+    measured_outcome: >-
+      Supervisory availability falls to 53.3% while service availability remains
+      100% and no invariant is violated. Loss of view is not loss of control --
+      in this scenario, in isolation.
+
+  - id: "OBJ-004"
+    objective: "Degradation or denial of the delivered service"
+    modelled: "partially"
+    scenario_ids: ["SCN-002", "SCN-006"]
+    techniques: []
+    engineered_mitigation: ["BS-04"]
+    note: >-
+      Service degradation is modelled, but only as arising from PHYSICAL causes
+      (demand surge, source depletion). No scenario produces service degradation
+      through adversary action, so no technique is mapped. A deliberately induced
+      service denial would be a different scenario.
+
+# Objectives an adversary would plausibly pursue that BLACKSTART does NOT model.
+# This list is longer than the one above, and that is the honest position.
+not_modelled:
+  - objective: "Gaining initial access to any zone"
+    reason: >-
+      Out of scope by design. BLACKSTART begins from assumed compromise
+      (ADR-006). It offers no evidence about how hard access is to obtain.
+
+  - objective: "Establishing persistence or moving laterally between zones"
+    reason: >-
+      Not modelled. The zone topology demonstrates structure; it is not exercised
+      against movement attempts, and no such capability exists in the repository.
+
+  - objective: "Compromising the engineering backstop itself"
+    reason: >-
+      Explicitly assumed away (assumptions A2). This is the single assumption
+      most likely to invalidate the flagship result if it does not hold in a real
+      system.
+
+  - objective: "Compromising the independent level element"
+    reason: >-
+      Explicitly assumed away (assumptions A3). Modelled as a separate hardwired
+      channel; a real one can be compromised.
+
+  - objective: "Manipulating the outlet valve command path"
+    reason: >-
+      NOT assumed away -- simply unprotected. The backstop constrains the pump
+      command path and applies no constraint to valve commands. Every
+      CTRL-RESERVE -> VLV-001 consequence path is uninterrupted. This is a real
+      gap in the current design, recorded in consequence-paths.yaml and held
+      visible by a test.
+
+  - objective: "Evading detection"
+    reason: >-
+      BLACKSTART v0.1 has no detection capability to evade. Detection metrics are
+      reported as NOT_IMPLEMENTED.
+
+  - objective: "Impairing the response or recovery function"
+    reason: >-
+      The Inhibit Response Function tactic is entirely uncovered. Recovery is
+      measured but never obstructed by a modelled adversary.

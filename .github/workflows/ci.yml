@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: CI reads the repository and nothing else.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  quality:
+    name: Lint, types, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --frozen
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check --output-format=github .
+          uv run ruff format --check .
+
+      - name: Type check (mypy, strict)
+        run: uv run mypy
+
+      - name: Validate configuration and scenario schemas
+        run: uv run python scripts/check_docs.py
+
+      - name: Unit tests
+        run: uv run pytest tests/unit -m unit
+
+      - name: Property-based tests
+        run: uv run pytest tests/property -m property
+
+      - name: Architecture tests
+        run: uv run pytest tests/architecture -m architecture
+
+      - name: Integration tests
+        run: uv run pytest tests/integration -m integration
+
+      # Branch coverage is gated on the safety-critical core only. A
+      # repository-wide number would reward testing trivial code and would say
+      # nothing about whether the invariant logic is exercised (ADR-005).
+      - name: Branch coverage on safety-critical modules
+        run: |
+          uv run pytest \
+            --cov=blackstart/core \
+            --cov=blackstart/controller \
+            --cov=blackstart/scenario_engine \
+            --cov=blackstart/analysis \
+            --cov=blackstart/evidence \
+            --cov-branch --cov-report=term-missing --cov-report=xml \
+            --cov-fail-under=90
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: warn
+
+  reproducibility:
+    name: Flagship experiment reproduces
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --frozen
+
+      # The claim in the README is that a reviewer can reproduce the flagship
+      # result. CI performs exactly that, so the claim cannot quietly stop
+      # being true.
+      - name: Run the flagship comparison
+        run: |
+          uv run blackstart experiment compare SCN-004 \
+            --variant backstop-disabled \
+            --variant backstop-enabled \
+            --evidence-root evidence/ci
+
+      - name: Verify and independently reproduce every evidence package
+        run: |
+          uv run blackstart evidence verify --all --reproduce \
+            --evidence-root evidence/ci
+
+      - name: Verify the committed baseline evidence still reproduces
+        run: |
+          uv run blackstart evidence verify --all --reproduce \
+            --evidence-root evidence/baseline
+
+      - name: Upload experiment evidence
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: flagship-evidence
+          path: evidence/ci
+          if-no-files-found: error
+
+  package:
+    name: Build and topology validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        with:
+          enable-cache: true
+
+      - name: Build the distribution
+        run: uv build
+
+      - name: Validate the Compose topology
+        run: docker compose config --quiet
+
+      - name: Build the service image
+        run: docker compose build
+
+      - name: Start the zoned topology
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Report service health
+        run: uv run --no-project --with pyyaml python scripts/health.py || true
+
+      - name: Confirm only the enterprise dashboard is published
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error http://127.0.0.1:8080/health > /dev/null
+          echo "enterprise dashboard reachable on loopback (expected)"
+          # No control-side port may be reachable from the host.
+          for port in 8081 8082 8083 8084; do
+            if curl --fail --silent --max-time 3 "http://127.0.0.1:${port}/health" > /dev/null; then
+              echo "FAIL: control-side port ${port} is reachable from the host"
+              exit 1
+            fi
+          done
+          echo "no control-side port is reachable from the host (expected)"
+
+      - name: Collect service logs
+        if: always()
+        run: docker compose logs --tail 100
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v --remove-orphans

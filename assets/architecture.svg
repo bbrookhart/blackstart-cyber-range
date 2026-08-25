@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700"
+     role="img" aria-labelledby="t d">
+  <title id="t">BLACKSTART zone and conduit architecture</title>
+  <desc id="d">Four security zones from enterprise to control, each on its own isolated network,
+  with one bridging service per conduit. A single port is published to host loopback. The
+  engineering constraint sits between the controller and the physical process.</desc>
+  <style>
+    .bg{fill:#FFFFFF} .fg{fill:#1B2430} .mut{fill:#5A6B7C} .faint{fill:#8595A4}
+    .panel{fill:#F7F9FB;stroke:#DDE4EA}
+    .zone{fill:#FFFFFF;stroke:#B9C4CE}
+    .svc{fill:#EEF2F6;stroke:#9AA9B7}
+    .arrow{stroke:#8595A4}
+    @media (prefers-color-scheme: dark) {
+      .bg{fill:#0B1017} .fg{fill:#EAF1F7} .mut{fill:#8FA6BB} .faint{fill:#5B7186}
+      .panel{fill:#101922;stroke:#22303D}
+      .zone{fill:#0F171F;stroke:#33465A}
+      .svc{fill:#16212C;stroke:#445A6E}
+      .arrow{stroke:#5B7186}
+    }
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .zt{font-size:12.5;font-weight:700;letter-spacing:2.2}
+    .sv{font-size:12}
+    .nt{font-size:10.5}
+  </style>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8595A4"/>
+    </marker>
+    <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#C6873B"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="700"/>
+  <rect class="panel" x="0.5" y="0.5" width="1199" height="699" rx="4"/>
+
+  <text class="fg" x="48" y="42" font-size="16" font-weight="700" letter-spacing="2.4">ZONE AND CONDUIT ARCHITECTURE</text>
+  <text class="mut" x="48" y="63" font-size="12">configs/architecture.yaml is the authority · docker-compose.yml is checked against it by tests/architecture/</text>
+
+  <!-- Host boundary -->
+  <g transform="translate(48,92)">
+    <rect x="0" y="0" width="330" height="44" rx="3" fill="none" stroke="#C6873B" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <text x="16" y="27" class="fg sv">HOST · 127.0.0.1:8080</text>
+    <text x="238" y="27" class="nt" fill="#C6873B">loopback only</text>
+    <line x1="165" y1="44" x2="165" y2="72" stroke="#C6873B" stroke-width="1.6" marker-end="url(#ac)"/>
+    <text x="176" y="64" class="nt" fill="#C6873B">the ONLY published port</text>
+  </g>
+
+  <!-- ============ ENTERPRISE ============ -->
+  <g transform="translate(48,164)">
+    <rect class="zone" x="0" y="0" width="800" height="76" rx="4"/>
+    <text class="zt fg" x="18" y="26">ENTERPRISE ZONE</text>
+    <text class="mut nt" x="18" y="46">blackstart_enterprise</text>
+    <text class="faint nt" x="18" y="63">untrusted for control</text>
+    <rect class="svc" x="470" y="18" width="310" height="42" rx="3"/>
+    <text class="fg sv" x="625" y="44" text-anchor="middle">enterprise-workstation</text>
+  </g>
+  <g transform="translate(448,240)">
+    <line x1="225" y1="0" x2="225" y2="34" class="arrow" stroke-width="1.6" marker-end="url(#a)"/>
+    <text class="mut nt" x="238" y="22">CDT-001 · read-only pull</text>
+  </g>
+
+  <!-- ============ IDMZ ============ -->
+  <g transform="translate(48,274)">
+    <rect class="zone" x="0" y="0" width="800" height="76" rx="4"/>
+    <text class="zt fg" x="18" y="26">INDUSTRIAL DMZ</text>
+    <text class="mut nt" x="18" y="46">blackstart_idmz · internal</text>
+    <text class="faint nt" x="18" y="63">brokered</text>
+    <rect class="svc" x="470" y="18" width="310" height="42" rx="3"/>
+    <text class="fg sv" x="625" y="44" text-anchor="middle">idmz-broker</text>
+  </g>
+  <g transform="translate(448,350)">
+    <line x1="225" y1="0" x2="225" y2="34" class="arrow" stroke-width="1.6" marker-end="url(#a)"/>
+    <text class="mut nt" x="238" y="22">CDT-002 · read-only pull</text>
+  </g>
+
+  <!-- ============ OT SUPERVISORY ============ -->
+  <g transform="translate(48,384)">
+    <rect class="zone" x="0" y="0" width="800" height="90" rx="4"/>
+    <text class="zt fg" x="18" y="26">OT SUPERVISORY ZONE</text>
+    <text class="mut nt" x="18" y="46">blackstart_ot · internal</text>
+    <text class="faint nt" x="18" y="63">operational</text>
+    <rect class="svc" x="470" y="20" width="148" height="42" rx="3"/>
+    <text class="fg sv" x="544" y="46" text-anchor="middle">historian</text>
+    <rect class="svc" x="632" y="20" width="148" height="42" rx="3"/>
+    <text class="fg sv" x="706" y="46" text-anchor="middle">hmi</text>
+    <line x1="618" y1="41" x2="628" y2="41" class="arrow" stroke-width="1.4" marker-end="url(#a)"/>
+    <text class="mut nt" x="544" y="80" text-anchor="middle">CDT-003</text>
+  </g>
+  <g transform="translate(448,474)">
+    <line x1="258" y1="0" x2="258" y2="42" stroke="#C6873B" stroke-width="2" marker-end="url(#ac)"/>
+    <text class="nt" x="272" y="18" fill="#C6873B" font-weight="700">CDT-004 · pull + command</text>
+    <text class="nt" x="272" y="34" fill="#C6873B">the ONLY command path</text>
+  </g>
+
+  <!-- ============ CONTROL ============ -->
+  <g transform="translate(48,516)">
+    <rect class="zone" x="0" y="0" width="800" height="140" rx="4"/>
+    <text class="zt fg" x="18" y="26">CONTROL / PROCESS ZONE</text>
+    <text class="mut nt" x="18" y="46">blackstart_control · internal</text>
+    <text class="faint nt" x="18" y="63">safety-relevant</text>
+
+    <rect class="svc" x="470" y="18" width="310" height="38" rx="3"/>
+    <text class="fg sv" x="625" y="42" text-anchor="middle">controller</text>
+    <line x1="625" y1="56" x2="625" y2="68" class="arrow" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <rect x="470" y="70" width="310" height="34" rx="3" fill="#2E7D66" fill-opacity="0.12" stroke="#2E7D66" stroke-width="1.6"/>
+    <text x="625" y="92" text-anchor="middle" font-size="11.5" font-weight="700" fill="#2E7D66">EBS-001 ENGINEERING CONSTRAINT</text>
+    <line x1="625" y1="104" x2="625" y2="116" stroke="#2E7D66" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <rect class="svc" x="470" y="106" width="310" height="26" rx="3"/>
+    <text class="fg nt" x="625" y="124" text-anchor="middle">PHYSICAL PROCESS TWIN</text>
+  </g>
+
+  <!-- ============ Side notes ============ -->
+  <g transform="translate(880,164)">
+    <text class="fg" x="0" y="0" font-size="12" font-weight="700" letter-spacing="1.6">ENFORCED PROPERTIES</text>
+    <g class="mut nt">
+      <text x="0" y="26">No service holds both an enterprise</text>
+      <text x="0" y="42">network and an OT-side network.</text>
+
+      <text x="0" y="72">Exactly one bridging service per</text>
+      <text x="0" y="88">conduit — no layer can be skipped.</text>
+
+      <text x="0" y="118">Controller is 3 hops from the</text>
+      <text x="0" y="134">enterprise zone.</text>
+
+      <text x="0" y="164">Telemetry flows outward only.</text>
+      <text x="0" y="180">No command originates outside</text>
+      <text x="0" y="196">the OT supervisory zone.</text>
+
+      <text x="0" y="226">One published port, loopback.</text>
+      <text x="0" y="242">No control-side port reachable</text>
+      <text x="0" y="258">from the host.</text>
+
+      <text x="0" y="288">All containers: non-root,</text>
+      <text x="0" y="304">read-only rootfs, cap_drop ALL,</text>
+      <text x="0" y="320">no-new-privileges, healthchecked.</text>
+    </g>
+    <line x1="0" y1="344" x2="272" y2="344" stroke="#8595A4" stroke-width="1" opacity="0.4"/>
+    <text class="nt" x="0" y="368" fill="#2E7D66" font-weight="700">Every property above is asserted</text>
+    <text class="nt" x="0" y="384" fill="#2E7D66" font-weight="700">by a test, not just documented.</text>
+
+    <text class="faint nt" x="0" y="422">Limitation: this demonstrates</text>
+    <text class="faint nt" x="0" y="438">topology, not enforcement strength.</text>
+    <text class="faint nt" x="0" y="454">Docker bridge networks are not</text>
+    <text class="faint nt" x="0" y="470">separate physical networks with</text>
+    <text class="faint nt" x="0" y="486">an inspecting firewall.</text>
+  </g>
+</svg>

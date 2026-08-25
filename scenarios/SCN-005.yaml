@@ -1,0 +1,56 @@
+# BLACKSTART scenario SCN-005
+id: "SCN-005"
+name: "Loss of supervisory visibility"
+category: "operational"
+seed: 5150
+duration_s: 900.0
+
+research_question: >-
+  Can the physical process remain inside acceptable bounds while the operator has
+  no view of it? Put differently: is loss of view the same thing as loss of
+  control?
+
+description: >-
+  The supervisory telemetry path becomes unavailable. The HMI and historian stop
+  receiving process data and the operator is blind for seven minutes.
+
+  Local control is unaffected. The controller sits in the control zone, reads its
+  own instrumentation, and continues to regulate the process exactly as before.
+
+  The expected answer is that the process stays safe and service is maintained,
+  because nothing the operator would have done during this window was required.
+  That is a real and reassuring property of a well-layered architecture -- and
+  also a limited one: it holds because nothing else went wrong at the same time.
+  The scenario measures visibility loss, not resilience to a compound event.
+
+events:
+  - t_s: 180.0
+    effect: "supervisory.blackout"
+    duration_s: 420.0
+    description: "Supervisory telemetry path unavailable; local control continues."
+    attack_ics: ["T0815"]
+
+notes: >-
+  Mapped to T0815 (Denial of View) at the level of EFFECT. The mechanism is not
+  modelled; blocked reporting messages (T1691.002) is one candidate among
+  several and is recorded as a candidate only.
+
+  Supervisory availability is measured and reported as a distinct metric from
+  service availability, because they are distinct properties and conflating them
+  is a common way to overstate the impact of a visibility outage.
+
+# Measured outcomes, populated from actual experiment runs and asserted by
+# tests/integration/test_scenario_expectations.py. A divergence means either the
+# implementation regressed or the design intent was wrong; both need
+# investigation rather than an updated number.
+expected:
+  backstop_disabled:
+    maximum_consequence: "C0"
+    violated_invariants: []
+    service_availability_pct_min: 99.9
+    service_availability_pct_max: 100.0
+  backstop_enabled:
+    maximum_consequence: "C0"
+    violated_invariants: []
+    service_availability_pct_min: 99.9
+    service_availability_pct_max: 100.0

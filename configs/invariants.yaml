@@ -1,0 +1,90 @@
+# BLACKSTART — safety and mission invariants
+#
+# Invariants are the ground-truth record of whether the simulated process was
+# actually safe. They evaluate TRUE physical state, not reported telemetry --
+# with the single, deliberate exception of INV-005, whose purpose is to compare
+# the two. See ADR-004.
+#
+# Invariants are an analysis instrument. They are NOT a control element and are
+# independent of the engineering backstop (configs/architecture.yaml), so that
+# "backstop enabled -> fewer violations" is a measured result and not a tautology.
+#
+# Status is three-valued: OK | APPROACHING | VIOLATED. APPROACHING is the leading
+# indicator, triggered inside `margin` of the limit.
+
+schema_version: 1
+
+invariants:
+  - id: "INV-001"
+    name: "Maximum safe tank level"
+    kind: "instantaneous_upper_bound"
+    rationale: >-
+      Sustained operation above the safe working level risks overtopping the
+      structure and the associated contamination ingress pathway. The limit sits
+      0.50 m below the physical overflow height so an excursion is observable and
+      recoverable rather than immediately catastrophic.
+    observes: "truth.tank_level_m"
+    limit_m: 4.50
+    margin_m: 0.25          # APPROACHING at or above 4.25 m
+    tolerance_s: 0.0        # instantaneous -- no grace period
+    severity_on_violation: "C4"
+
+  - id: "INV-002"
+    name: "Minimum operational reserve"
+    kind: "temporal_lower_bound"
+    rationale: >-
+      The reserve volume backs firefighting draw and short-notice demand. Brief
+      excursions during a surge are operationally normal; a sustained excursion
+      is a loss of the required service.
+    observes: "truth.tank_level_m"
+    limit_m: 1.00
+    margin_m: 0.30          # APPROACHING at or below 1.30 m
+    tolerance_s: 120.0      # violation only after 120 s continuously below limit
+    severity_on_violation: "C3"
+
+  - id: "INV-003"
+    name: "Pump dry-run protection"
+    kind: "conditional"
+    rationale: >-
+      Running a centrifugal pump without suction destroys seals and bearings
+      within minutes. The pump draws current while delivering no flow, so this
+      condition is invisible in a level trend alone.
+    observes: ["truth.pump_energised", "truth.source_level_m"]
+    condition: "pump_energised AND source_level_m <= source.suction_limit_m"
+    margin_m: 0.25          # APPROACHING while pumping with source within 0.25 m of the limit
+    tolerance_s: 10.0       # allow one control scan plus margin to react
+    severity_on_violation: "C4"
+
+  - id: "INV-004"
+    name: "Command-rate constraint"
+    kind: "rate"
+    rationale: >-
+      Bounds control action to physically achievable and equipment-safe
+      transitions. Rapid setpoint slew or motor short-cycling is either
+      physically impossible or damaging, and is a signature of automated rather
+      than human command origin.
+    # Observes the REQUESTED setpoint, not the effective one. The question is
+    # "was a physically implausible command issued?", and the answer does not
+    # change because the backstop later refused it. This keeps the detection
+    # signal present in both experiment variants. See ADR-004.
+    observes: ["command.requested_setpoint_m", "command.pump_starts"]
+    max_setpoint_slew_m_s: 0.05
+    max_pump_starts_per_hour: 12    # nominal operation runs at ~8.6 starts/hour
+    tolerance_s: 0.0
+    severity_on_violation: "C1"
+
+  - id: "INV-005"
+    name: "Telemetry integrity awareness"
+    kind: "cross_view"
+    rationale: >-
+      The evidence model must be able to represent a divergence between physical
+      reality and the operator-facing view even while the operator-facing view is
+      wrong. This invariant is the reason a telemetry-manipulation effect cannot
+      also falsify the experimental record.
+    observes: ["truth.tank_level_m", "reported.tank_level_m"]
+    # Comfortably above transmitter noise (sigma = 0.005 m), so nominal operation
+    # never trips it.
+    max_divergence_m: 0.10
+    margin_m: 0.04
+    tolerance_s: 5.0
+    severity_on_violation: "C1"

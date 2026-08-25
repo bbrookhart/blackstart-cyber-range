@@ -1,0 +1,200 @@
+# BLACKSTART — system-of-systems architecture
+#
+# This file is the AUTHORITY for the zone/conduit topology and the engineering
+# backstop policy. docker-compose.yml is checked against the zone model here by
+# tests/architecture/. If the two disagree, the tests fail. See ADR-003.
+
+schema_version: 1
+
+# ---------------------------------------------------------------------------
+# Security zones (IEC 62443 zone/conduit concepts; NIST SP 800-82r3 architecture
+# guidance). Ordered outermost -> innermost.
+# ---------------------------------------------------------------------------
+zones:
+  - id: "enterprise"
+    name: "Enterprise Zone"
+    network: "blackstart_enterprise"
+    purpose: "Administrative IT and read-only operational reporting."
+    trust: "untrusted-for-control"
+
+  - id: "idmz"
+    name: "Industrial DMZ"
+    network: "blackstart_idmz"
+    purpose: "Brokered telemetry boundary between enterprise IT and OT."
+    trust: "brokered"
+
+  - id: "ot"
+    name: "OT Supervisory Zone"
+    network: "blackstart_ot"
+    purpose: "Operator interface and process historian."
+    trust: "operational"
+
+  - id: "control"
+    name: "Control / Process Zone"
+    network: "blackstart_control"
+    purpose: "Controller abstraction, engineering backstop, physical process twin."
+    trust: "safety-relevant"
+
+# Adjacency permitted for a single service. A service may bridge exactly one
+# adjacent pair; no service may hold both an enterprise and an OT-side network.
+permitted_adjacency:
+  - ["enterprise", "idmz"]
+  - ["idmz", "ot"]
+  - ["ot", "control"]
+
+forbidden_adjacency:
+  - ["enterprise", "ot"]
+  - ["enterprise", "control"]
+  - ["idmz", "control"]
+
+# ---------------------------------------------------------------------------
+# Services. `networks` must match docker-compose.yml exactly.
+# ---------------------------------------------------------------------------
+services:
+  - id: "enterprise-workstation"
+    zone: "enterprise"
+    networks: ["blackstart_enterprise"]
+    role: "Read-only enterprise dashboard. The only host-published surface."
+    publishes: ["127.0.0.1:8080"]
+
+  - id: "idmz-broker"
+    zone: "idmz"
+    networks: ["blackstart_enterprise", "blackstart_idmz"]
+    role: "Conduit. Pulls telemetry from the historian, serves it to enterprise."
+    publishes: []
+
+  - id: "historian"
+    zone: "ot"
+    networks: ["blackstart_idmz", "blackstart_ot"]
+    role: "Time-series store of process telemetry, invariants and consequences."
+    publishes: []
+
+  - id: "hmi"
+    zone: "ot"
+    networks: ["blackstart_ot", "blackstart_control"]
+    role: "Operator process view. Reads controller state; issues setpoints."
+    publishes: []
+
+  - id: "controller"
+    zone: "control"
+    networks: ["blackstart_control"]
+    role: "PLC abstraction, engineering backstop, deterministic process twin."
+    publishes: []
+
+# Every cross-zone communication path in the deployed topology. Telemetry is
+# PULLED outward by the higher zone; no control command originates outside the
+# OT supervisory zone. Asserted by tests/architecture/test_zone_topology.py.
+conduits:
+  - id: "CDT-001"
+    from_zone: "enterprise"
+    to_zone: "idmz"
+    initiator: "enterprise-workstation"
+    responder: "idmz-broker"
+    protocol: "HTTP/1.1"
+    port: 8081
+    direction: "pull"
+    data: "Aggregated process summary, read-only."
+
+  - id: "CDT-002"
+    from_zone: "idmz"
+    to_zone: "ot"
+    initiator: "idmz-broker"
+    responder: "historian"
+    protocol: "HTTP/1.1"
+    port: 8082
+    direction: "pull"
+    data: "Historian query results, read-only."
+
+  - id: "CDT-003"
+    from_zone: "ot"
+    to_zone: "ot"
+    initiator: "historian"
+    responder: "hmi"
+    protocol: "HTTP/1.1"
+    port: 8083
+    direction: "pull"
+    data: "Current process view for archival."
+
+  - id: "CDT-004"
+    from_zone: "ot"
+    to_zone: "control"
+    initiator: "hmi"
+    responder: "controller"
+    protocol: "HTTP/1.1"
+    port: 8084
+    direction: "pull+command"
+    data: >-
+      Process state read; operator setpoint write. This is the only path on
+      which a control command may travel, and every command crossing it is
+      subject to the engineering backstop.
+
+# ---------------------------------------------------------------------------
+# Engineering backstop.
+#
+# A simulated independent engineering constraint located in the control zone,
+# logically downstream of all operator and supervisory command paths. It is
+# INDEPENDENT of the invariant checker (ADR-004) and shares no code with it.
+#
+# Thresholds are deliberately TIGHTER than the corresponding invariant limits so
+# the backstop acts before the safety limit is reached. The margin between the
+# two is itself a measured quantity.
+# ---------------------------------------------------------------------------
+backstop:
+  id: "EBS-001"
+  name: "Independent command constraint and high-level trip"
+  enabled_by_default: true
+  independence:
+    # What "independent" means here, precisely. See docs/limitations.md.
+    command_path: >-
+      Evaluated after the control request is formed and before any actuator is
+      driven. Cannot be reconfigured through the operator or supervisory path.
+    measurement: >-
+      Uses the independent level element (configs/process.yaml), modelled on a
+      separate channel from the operator level transmitter and unaffected by
+      sensor.* scenario effects. This independence is a MODELLING ASSUMPTION.
+    limits: >-
+      Policy thresholds are loaded from configuration at start and are not
+      writable at runtime by any simulated command path.
+
+  rules:
+    - id: "BS-01"
+      name: "Setpoint absolute clamp"
+      description: >-
+        Any requested level setpoint is clamped into the permitted engineering
+        range regardless of its origin or authorisation.
+      setpoint_min_m: 1.50
+      setpoint_max_m: 3.60
+      protects: ["INV-001", "INV-002"]
+
+    - id: "BS-02"
+      name: "Setpoint slew limit"
+      description: >-
+        Bounds the rate at which the effective setpoint may move, so a single
+        mutated command cannot produce a step change in process target.
+      max_slew_m_s: 0.05
+      protects: ["INV-004"]
+
+    - id: "BS-03"
+      name: "Independent high-level pump trip"
+      description: >-
+        Denies any pump-run permissive when the INDEPENDENT level element reads
+        at or above the trip level. This is the rule that survives falsification
+        of the operator level transmitter (SCN-003).
+      trip_level_m: 4.20
+      reset_level_m: 4.05     # 0.15 m hysteresis prevents trip chatter
+      protects: ["INV-001"]
+
+    - id: "BS-04"
+      name: "Dry-run suction interlock"
+      description: >-
+        Denies the pump-run permissive when the source level is at or below the
+        suction limit, preventing the pump from operating without suction.
+      protects: ["INV-003"]
+
+    - id: "BS-05"
+      name: "Anti-cycle minimum off time"
+      description: >-
+        Denies a pump start until the configured minimum off time has elapsed,
+        bounding motor start frequency.
+      min_off_time_s: 30.0
+      protects: ["INV-004"]

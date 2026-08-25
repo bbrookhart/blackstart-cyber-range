@@ -1,0 +1,227 @@
+# BLACKSTART — enumerated high-consequence dependency paths
+#
+# GENERATED from the dependency graph in configs/assets.yaml. Do not hand-edit:
+# regenerate with
+#
+#     uv run python scripts/generate_consequence_paths.py > threat-model/consequence-paths.yaml
+#
+# tests/unit/test_consequence_paths_doc.py asserts that every path listed here
+# still exists in the graph and that the counts match, so this file cannot drift
+# away from the model it describes.
+#
+# WHAT A PATH IS: a route by which a change in one modelled component can
+# influence a physical outcome severe enough to be classified C4 or above. It is
+# a MODELLED POSSIBILITY, not an observed event and not a demonstrated attack.
+# Whether any path is exploitable against a real system is not established here.
+#
+# `interrupted_by` names the engineering-backstop rules that break the path.
+
+schema_version: 1
+minimum_class: "C4"
+summary:
+  total_paths: 40
+  interrupted_by_engineering_control: 18
+  remaining_uninterrupted: 22
+  reduction_pct: 45.0
+
+paths:
+  - id: "CP-001"
+    terminal_consequence: "C4"
+    origin: "RES-001"
+    path: ["RES-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-002"
+    terminal_consequence: "C4"
+    origin: "RES-001"
+    path: ["RES-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-003"
+    terminal_consequence: "C4"
+    origin: "TNK-001"
+    path: ["TNK-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-004"
+    terminal_consequence: "C4"
+    origin: "TNK-001"
+    path: ["TNK-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-005"
+    terminal_consequence: "C4"
+    origin: "CTRL-LEVEL"
+    path: ["CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-006"
+    terminal_consequence: "C4"
+    origin: "CTRL-LEVEL"
+    path: ["CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-007"
+    terminal_consequence: "C4"
+    origin: "CTRL-RESERVE"
+    path: ["CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-008"
+    terminal_consequence: "C4"
+    origin: "CTRL-RESERVE"
+    path: ["CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-009"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-010"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-011"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-012"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-013"
+    terminal_consequence: "C4"
+    origin: "PLC-001"
+    path: ["PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-014"
+    terminal_consequence: "C4"
+    origin: "PLC-001"
+    path: ["PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-015"
+    terminal_consequence: "C4"
+    origin: "PLC-001"
+    path: ["PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-016"
+    terminal_consequence: "C4"
+    origin: "PLC-001"
+    path: ["PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-017"
+    terminal_consequence: "C4"
+    origin: "HMI-001"
+    path: ["HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-018"
+    terminal_consequence: "C4"
+    origin: "HMI-001"
+    path: ["HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-019"
+    terminal_consequence: "C4"
+    origin: "HMI-001"
+    path: ["HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-020"
+    terminal_consequence: "C4"
+    origin: "HMI-001"
+    path: ["HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-021"
+    terminal_consequence: "C4"
+    origin: "HIST-001"
+    path: ["HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-022"
+    terminal_consequence: "C4"
+    origin: "HIST-001"
+    path: ["HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-023"
+    terminal_consequence: "C4"
+    origin: "HIST-001"
+    path: ["HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-024"
+    terminal_consequence: "C4"
+    origin: "HIST-001"
+    path: ["HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-025"
+    terminal_consequence: "C4"
+    origin: "ID-OPERATOR"
+    path: ["ID-OPERATOR", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-026"
+    terminal_consequence: "C4"
+    origin: "ID-OPERATOR"
+    path: ["ID-OPERATOR", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-027"
+    terminal_consequence: "C4"
+    origin: "ID-OPERATOR"
+    path: ["ID-OPERATOR", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-028"
+    terminal_consequence: "C4"
+    origin: "ID-OPERATOR"
+    path: ["ID-OPERATOR", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-029"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-030"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-031"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-032"
+    terminal_consequence: "C4"
+    origin: "LIT-001"
+    path: ["LIT-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-033"
+    terminal_consequence: "C4"
+    origin: "BRK-001"
+    path: ["BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-034"
+    terminal_consequence: "C4"
+    origin: "BRK-001"
+    path: ["BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-035"
+    terminal_consequence: "C4"
+    origin: "BRK-001"
+    path: ["BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-036"
+    terminal_consequence: "C4"
+    origin: "BRK-001"
+    path: ["BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []
+  - id: "CP-037"
+    terminal_consequence: "C4"
+    origin: "EWS-001"
+    path: ["EWS-001", "BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-038"
+    terminal_consequence: "C4"
+    origin: "EWS-001"
+    path: ["EWS-001", "BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-LEVEL", "PMP-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: ["BS-01", "BS-02", "BS-03", "BS-04", "BS-05"]
+  - id: "CP-039"
+    terminal_consequence: "C4"
+    origin: "EWS-001"
+    path: ["EWS-001", "BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-001", "C4"]
+    interrupted_by: []
+  - id: "CP-040"
+    terminal_consequence: "C4"
+    origin: "EWS-001"
+    path: ["EWS-001", "BRK-001", "HIST-001", "HMI-001", "PLC-001", "CTRL-RESERVE", "VLV-001", "PROC-001", "INV-003", "C4"]
+    interrupted_by: []

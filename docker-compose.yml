@@ -1,0 +1,212 @@
+# BLACKSTART — zoned demonstration topology.
+#
+# The authority for this topology is configs/architecture.yaml.
+# tests/architecture/ parses BOTH files and fails if they disagree, so the
+# diagram in the README, the configuration, and what actually deploys cannot
+# drift apart. That drift is the most common failure mode in security
+# architecture repositories, and it is the one this file is arranged to prevent.
+#
+# Key properties, each asserted by a test:
+#
+#   * Four isolated networks, one per zone.
+#   * No service is attached to both the enterprise network and an OT-side one.
+#   * Exactly one host-published port: 127.0.0.1:8080, the read-only enterprise
+#     dashboard. Control ports are not reachable from the host at all.
+#   * Every service: non-root, read-only root filesystem, all capabilities
+#     dropped, no privilege escalation, and a health check.
+#
+# This topology is a demonstration of the architecture. Published experimental
+# results are produced by the CLI in one deterministic process (ADR-001).
+
+x-service-defaults: &service-defaults
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: blackstart/service:0.1.0
+  restart: unless-stopped
+  user: "10001:10001"
+  read_only: true
+  # uvicorn and Python need a small writable scratch area; nothing is persisted.
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  environment:
+    PYTHONUNBUFFERED: "1"
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # --- Control / process zone ------------------------------------------------
+  # Innermost. Attached only to blackstart_control. Runs the process twin, the
+  # controller, and the engineering backstop. Publishes nothing.
+  controller:
+    <<: *service-defaults
+    container_name: blackstart-controller
+    command:
+      - python
+      - -m
+      - uvicorn
+      - services.controller.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8084"
+    networks:
+      - blackstart_control
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8084/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --- OT supervisory zone ---------------------------------------------------
+  # Bridges blackstart_ot and blackstart_control: conduit CDT-004, the only path
+  # on which a control command may travel.
+  hmi:
+    <<: *service-defaults
+    container_name: blackstart-hmi
+    command:
+      - python
+      - -m
+      - uvicorn
+      - services.hmi.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8083"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      CONTROLLER_URL: "http://controller:8084"
+    networks:
+      - blackstart_ot
+      - blackstart_control
+    depends_on:
+      controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8083/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Bridges blackstart_idmz and blackstart_ot: conduit CDT-002. Read-only
+  # outward; carries no command path inward.
+  historian:
+    <<: *service-defaults
+    container_name: blackstart-historian
+    command:
+      - python
+      - -m
+      - uvicorn
+      - services.historian.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8082"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      HMI_URL: "http://hmi:8083"
+    networks:
+      - blackstart_idmz
+      - blackstart_ot
+    depends_on:
+      hmi:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8082/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --- Industrial DMZ --------------------------------------------------------
+  # The ONLY service attached to both blackstart_enterprise and an OT-side
+  # network. Every enterprise/OT flow traverses this process: conduit CDT-001.
+  idmz-broker:
+    <<: *service-defaults
+    container_name: blackstart-idmz-broker
+    command:
+      - python
+      - -m
+      - uvicorn
+      - services.idmz.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8081"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      HISTORIAN_URL: "http://historian:8082"
+    networks:
+      - blackstart_enterprise
+      - blackstart_idmz
+    depends_on:
+      historian:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --- Enterprise zone -------------------------------------------------------
+  # The only host-published surface, bound explicitly to loopback. Cannot reach
+  # the historian, the HMI, or the controller.
+  enterprise-workstation:
+    <<: *service-defaults
+    container_name: blackstart-enterprise-workstation
+    command:
+      - python
+      - -m
+      - uvicorn
+      - services.enterprise.app:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      BROKER_URL: "http://idmz-broker:8081"
+    ports:
+      # Loopback only. Never 0.0.0.0, and never a control-zone port.
+      - "127.0.0.1:8080:8080"
+    networks:
+      - blackstart_enterprise
+    depends_on:
+      idmz-broker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# Four isolated bridge networks, one per security zone. `internal: true` on the
+# OT-side networks means containers attached only to them have no route off the
+# host at all.
+networks:
+  blackstart_enterprise:
+    name: blackstart_enterprise
+    driver: bridge
+  blackstart_idmz:
+    name: blackstart_idmz
+    driver: bridge
+    internal: true
+  blackstart_ot:
+    name: blackstart_ot
+    driver: bridge
+    internal: true
+  blackstart_control:
+    name: blackstart_control
+    driver: bridge
+    internal: true

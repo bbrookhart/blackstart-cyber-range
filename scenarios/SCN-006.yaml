@@ -1,0 +1,55 @@
+# BLACKSTART scenario SCN-006
+id: "SCN-006"
+name: "Source depletion and dry-run exposure"
+category: "physical-disturbance"
+seed: 6060
+duration_s: 1800.0
+
+research_question: >-
+  When the underlying supply fails, does an engineering interlock actually
+  improve the outcome, or does it only relocate the consequence?
+
+description: >-
+  The upstream source reservoir is progressively depleted until the pump loses
+  suction. The control system, seeing storage fall, does the only thing it knows
+  how to do: it calls for the pump. The pump is energised, draws current, and
+  delivers nothing.
+
+  This scenario exists to test an uncomfortable question honestly. The dry-run
+  interlock BS-04 prevents equipment damage, and the results show that it does.
+  It does not produce water. The service consequence arrives either way, because
+  the actual problem is that there is no supply -- and an engineered control that
+  prevents one consequence while leaving another untouched is the normal case,
+  not a failure of the control.
+
+  Reporting that trade-off plainly is more useful than a result in which the
+  engineering control makes every number better.
+
+events:
+  - t_s: 120.0
+    effect: "source.depletion"
+    description: "Source reservoir depleted from 6.00 m toward 0.20 m over ten minutes."
+    params:
+      target_level_m: 0.20
+      ramp_s: 600.0
+    attack_ics: []
+
+notes: >-
+  ATT&CK for ICS mapping is deliberately empty. Source depletion is modelled here
+  as a physical supply failure with no adversary involvement.
+
+# Measured outcomes, populated from actual experiment runs and asserted by
+# tests/integration/test_scenario_expectations.py. A divergence means either the
+# implementation regressed or the design intent was wrong; both need
+# investigation rather than an updated number.
+expected:
+  backstop_disabled:
+    maximum_consequence: "C5"
+    violated_invariants: ["INV-002", "INV-003"]
+    service_availability_pct_min: 38.0
+    service_availability_pct_max: 39.5
+  backstop_enabled:
+    maximum_consequence: "C3"
+    violated_invariants: ["INV-002", "INV-004"]
+    service_availability_pct_min: 76.5
+    service_availability_pct_max: 78.0

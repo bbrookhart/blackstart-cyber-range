@@ -1,0 +1,136 @@
+# BLACKSTART — NIST Cybersecurity Framework 2.0 orientation
+#
+# INFORMATIONAL ONLY. This is not a compliance artefact, not an assessment, and
+# not a claim of conformance or certification. It exists so a reader who thinks
+# in CSF terms can locate BLACKSTART's contribution quickly, and -- more
+# usefully -- can see where BLACKSTART contributes nothing.
+#
+# MAPPING GRANULARITY: FUNCTION LEVEL ONLY.
+#
+# The six CSF 2.0 Functions and their abbreviations were verified against
+# nist.gov on the date below. Category and Subcategory identifiers (of the form
+# GV.OC-01, PR.AA-05) are DELIBERATELY ABSENT: they could not be verified against
+# the authoritative publication at the time of writing, and this project's own
+# standard forbids asserting an identifier it has not checked. Reproducing
+# plausible-looking identifiers from memory is precisely the failure this
+# repository argues against.
+#
+# Subcategory-level mapping is a roadmap item, contingent on verification
+# against the published CSF 2.0 Core.
+
+schema_version: 1
+
+source:
+  framework: "NIST Cybersecurity Framework (CSF) 2.0"
+  publication: "NIST CSWP 29"
+  url: "https://www.nist.gov/cyberframework"
+  functions_verified: "2026-08-24"
+  mapping_granularity: "function"
+  subcategory_mapping: "not performed -- identifiers unverified; see header"
+
+disclaimer: >-
+  BLACKSTART is a research simulation of a fictional process. Satisfying anything
+  described here does not demonstrate that an organisation implements the CSF,
+  and no part of this file should be presented as evidence of conformance.
+
+functions:
+  - id: "GV"
+    name: "Govern"
+    blackstart_contribution: "minimal"
+    what_exists:
+      - "Documented scope, safety boundary and prohibited activity (SECURITY.md, ADR-006)"
+      - "Explicit statement of unacceptable outcomes, prioritised before any control (threat-model/README.md)"
+      - "Recorded assumptions with stated consequences if wrong (threat-model/assumptions.md)"
+    what_does_not_exist:
+      - "Any organisational policy, role, or risk-management structure"
+      - "Supply-chain risk management beyond dependency auditing and SBOM generation"
+    honest_assessment: >-
+      BLACKSTART demonstrates the *reasoning discipline* of consequence
+      prioritisation. It is a piece of software, not an organisation, and
+      contributes essentially nothing to organisational governance.
+
+  - id: "ID"
+    name: "Identify"
+    blackstart_contribution: "substantial"
+    what_exists:
+      - "Critical function CF-001 defined with an explicit satisfaction predicate"
+      - "Asset and dependency model (configs/assets.yaml) with typed nodes and causal edges"
+      - "Enumerated consequence paths, generated from the model (threat-model/consequence-paths.yaml)"
+      - "Queries answering what supports CF-001 and what can influence a given invariant"
+      - "Quantified consequence taxonomy with machine-readable thresholds"
+    what_does_not_exist:
+      - "Risk likelihood estimation of any kind -- BLACKSTART has no basis for it"
+      - "Vulnerability identification; the project deliberately does not start there"
+    honest_assessment: >-
+      This is where BLACKSTART contributes most. It demonstrates consequence-first
+      dependency analysis end to end, from critical function to enumerated path.
+
+  - id: "PR"
+    name: "Protect"
+    blackstart_contribution: "substantial, narrow"
+    what_exists:
+      - "Engineering backstop EBS-001: an independent constraint on the command path"
+      - "Zone/conduit architecture with one bridging service per conduit and a single loopback-published port"
+      - "Command-origin independence: a declared origin is recorded, never trusted"
+      - "Measured evidence that the constraint changes the physical outcome"
+    what_does_not_exist:
+      - "Authentication, authorisation, identity management, or access control"
+      - "Cryptographic protection of data in transit or at rest"
+      - "Any constraint on the outlet valve command path -- a known, recorded gap"
+    honest_assessment: >-
+      BLACKSTART demonstrates one specific protective idea very thoroughly:
+      an engineered constraint that does not depend on correctly identifying which
+      commands are legitimate. It implements almost nothing else under this
+      function.
+
+  - id: "DE"
+    name: "Detect"
+    blackstart_contribution: "none"
+    what_exists:
+      - "Structured telemetry designed so a detection layer could consume it"
+      - "INV-004 as a latent detection opportunity: an implausible command is recorded whether or not it succeeded"
+      - "Three-valued invariant status providing leading indicators"
+    what_does_not_exist:
+      - "Any detection analytic, rule, signature or model"
+      - "Any network telemetry at all"
+      - "Detection latency, containment latency and false-positive rate -- reported as NOT_IMPLEMENTED"
+    honest_assessment: >-
+      BLACKSTART v0.1 does not detect anything. The metrics that would describe
+      detection performance are marked NOT_IMPLEMENTED rather than reported as
+      zero. This is the single largest gap in the release and the highest-value
+      next milestone.
+
+  - id: "RS"
+    name: "Respond"
+    blackstart_contribution: "minimal"
+    what_exists:
+      - "Structured, ordered event stream suitable for reconstructing an incident timeline"
+      - "Evidence packages that let a reviewer establish exactly what happened"
+      - "Automatic engineered response: the backstop denies unsafe actuation without human involvement"
+    what_does_not_exist:
+      - "Incident response process, triage, containment or eradication workflow"
+      - "Any human-in-the-loop response modelling"
+    honest_assessment: >-
+      The backstop is an engineered response rather than an organisational one.
+      BLACKSTART produces the evidence a responder would want; it does not model
+      responding.
+
+  - id: "RC"
+    name: "Recover"
+    blackstart_contribution: "partial"
+    what_exists:
+      - "Recovery time measured from the end of a disturbance to sustained restoration of CF-001"
+      - "Explicit reporting when recovery is NOT defined, rather than a misleading null"
+      - "Reserve protection: a control action that trades service for reserve volume"
+      - "Degraded-mode operation demonstrated (SCN-005: control continues without supervisory visibility)"
+    what_does_not_exist:
+      - "Restoration of compromised digital components"
+      - "Recovery from loss of telemetry integrity -- SCN-003 shows the process recovers while trust does not"
+    honest_assessment: >-
+      Physical recovery is measured. Digital recovery is not modelled at all.
+
+summary: >-
+  BLACKSTART contributes meaningfully to Identify, Protect and Recover, in a
+  narrow domain; minimally to Govern and Respond; and nothing to Detect. A reader
+  should treat it as a deep probe into one question rather than as broad coverage
+  of the framework.
