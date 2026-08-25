@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security or safety concern
-    url: https://github.com/blackstart-research/blackstart-cyber-range/security/advisories/new
+    url: https://github.com/bbrookhart/blackstart-cyber-range/security/advisories/new
     about: >-
       Report privately. Do NOT open a public issue for a security or safety
       concern, including anything suggesting BLACKSTART could affect a system

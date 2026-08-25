@@ -16,14 +16,14 @@ type: software
 version: "0.1.0"
 date-released: "2026-08-24"
 license: Apache-2.0
-repository-code: "https://github.com/blackstart-research/blackstart-cyber-range"
+repository-code: "https://github.com/bbrookhart/blackstart-cyber-range"
 
 # Author identity is not recorded in this repository. Replace this placeholder
 # with real author metadata before citing or publishing. A fabricated author,
 # affiliation or ORCID would be worse than an obvious placeholder.
 authors:
   - name: "BLACKSTART Research"
-    alias: "blackstart-research"
+    # Replace with real author metadata before citing.
 
 keywords:
   - industrial control systems

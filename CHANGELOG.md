@@ -60,7 +60,7 @@ First operational research release.
   influence, high-consequence paths and engineering-control path reduction.
 
 **Quality**
-- 358 tests across unit, property-based, integration and architecture suites.
+- 377 tests across unit, property-based, integration and architecture suites.
 - 95% branch coverage on safety-critical modules against a 90% gate.
 - Strict `mypy` across package, services and tests.
 - ADR-001 through ADR-006.
@@ -78,4 +78,4 @@ detection and containment metrics are reported as `NOT_IMPLEMENTED`. It models
 the *effects* of compromise, not the *mechanisms* of intrusion. See
 [docs/limitations.md](docs/limitations.md) for the full statement.
 
-[0.1.0]: https://github.com/blackstart-research/blackstart-cyber-range/releases/tag/v0.1.0
+[0.1.0]: https://github.com/bbrookhart/blackstart-cyber-range/releases/tag/v0.1.0

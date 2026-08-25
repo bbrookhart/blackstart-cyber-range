@@ -33,8 +33,8 @@ services = [
 blackstart = "blackstart.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/blackstart-research/blackstart-cyber-range"
-Repository = "https://github.com/blackstart-research/blackstart-cyber-range"
+Homepage = "https://github.com/bbrookhart/blackstart-cyber-range"
+Repository = "https://github.com/bbrookhart/blackstart-cyber-range"
 
 [dependency-groups]
 dev = [

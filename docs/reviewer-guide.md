@@ -191,7 +191,7 @@ The five questions most likely to expose a problem, and where the answers live:
 ## The whole quality gate
 
 ```bash
-make check      # lint + strict mypy + 358 tests + 90% branch coverage gate
+make check      # lint + strict mypy + 377 tests + 90% branch coverage gate
 make audit      # dependency vulnerability audit
 make docs       # configuration, scenario and cross-reference validation
 ```

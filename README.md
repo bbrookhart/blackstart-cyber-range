@@ -6,8 +6,8 @@
 
 **A consequence-driven cyber-physical resilience range for critical infrastructure under compromise.**
 
-[![CI](https://github.com/blackstart-research/blackstart-cyber-range/actions/workflows/ci.yml/badge.svg)](https://github.com/blackstart-research/blackstart-cyber-range/actions/workflows/ci.yml)
-[![Security](https://github.com/blackstart-research/blackstart-cyber-range/actions/workflows/security.yml/badge.svg)](https://github.com/blackstart-research/blackstart-cyber-range/actions/workflows/security.yml)
+[![CI](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/ci.yml/badge.svg)](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/ci.yml)
+[![Security](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/security.yml/badge.svg)](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/security.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-1B2430)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-1B2430)](LICENSE)
 [![Version 0.1.0](https://img.shields.io/badge/version-0.1.0-1B2430)](CHANGELOG.md)
@@ -74,8 +74,8 @@ in CI on every change.
 | Evidence signing | 🟡 Roadmap — integrity is tamper-*evident* only |
 | Hardware-in-the-loop | ⚪ Research direction |
 
-**358 tests** · **95% branch coverage** on safety-critical modules (90% gate) ·
-strict `mypy` across 72 files.
+**377 tests** · **95% branch coverage** on safety-critical modules (90% gate) ·
+strict `mypy` across 74 files.
 
 ---
 
@@ -221,11 +221,11 @@ Full method: [docs/methodology.md](docs/methodology.md).
 ## Quick start
 
 ```bash
-git clone https://github.com/blackstart-research/blackstart-cyber-range
+git clone https://github.com/bbrookhart/blackstart-cyber-range
 cd blackstart-cyber-range
 
 make bootstrap          # create the venv, install everything
-make test               # 358 tests
+make test               # 377 tests
 make demo               # reproduce the flagship comparison
 ```
 
@@ -545,7 +545,7 @@ utility or vendor is claimed or implied.
   year   = {2026},
   version = {0.1.0},
   license = {Apache-2.0},
-  url    = {https://github.com/blackstart-research/blackstart-cyber-range}
+  url    = {https://github.com/bbrookhart/blackstart-cyber-range}
 }
 ```
 
