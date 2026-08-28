@@ -1,0 +1,182 @@
+{
+  "consequence_containment": {
+    "maximum_consequence": {
+      "backstop_off": "C4",
+      "backstop_on": "C1"
+    },
+    "maximum_tank_level_m": {
+      "backstop_off": 5.0,
+      "backstop_on": 3.9998,
+      "reduction_m": 1.0002
+    },
+    "unsafe_state_duration_s": {
+      "backstop_off": 639.5,
+      "backstop_on": 0.0,
+      "containment_pct": 100.0,
+      "reduction_s": 639.5
+    }
+  },
+  "consequence_path_reduction": {
+    "interpretation": "Counts modelled dependency paths, not observed events. A path is a possibility in the architecture; whether it is exploitable is not established by this metric.",
+    "interrupted_paths": 18,
+    "minimum_class": "C4",
+    "reachable_paths_with_engineering_control": 22,
+    "reachable_paths_without_engineering_control": 40,
+    "reduction_pct": 45.0
+  },
+  "evidence": {
+    "backstop_off": "experiments/releases/v0.1.0/evidence/EXP-SCN004-backstop-disabled-d14f929b",
+    "backstop_on": "experiments/releases/v0.1.0/evidence/EXP-SCN004-backstop-enabled-41fa58ff"
+  },
+  "experiment": "EXP-BS-001-v1",
+  "metrics": [
+    {
+      "better": "lower",
+      "delta": {
+        "class_change": -3,
+        "improved": true
+      },
+      "label": "Maximum consequence",
+      "metric": "maximum_consequence",
+      "values": {
+        "backstop-disabled": "C4",
+        "backstop-enabled": "C1"
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -2.0,
+        "improved": true
+      },
+      "label": "Invariant violations",
+      "metric": "invariant_violations_total",
+      "values": {
+        "backstop-disabled": 3,
+        "backstop-enabled": 1
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -1659.5,
+        "improved": true
+      },
+      "label": "Invariant violation duration (s)",
+      "metric": "invariant_violation_duration_s",
+      "values": {
+        "backstop-disabled": 1660.0,
+        "backstop-enabled": 0.5
+      }
+    },
+    {
+      "better": "higher",
+      "delta": {
+        "absolute_change": 53.2917,
+        "improved": true
+      },
+      "label": "Service availability (%)",
+      "metric": "service_availability_pct",
+      "values": {
+        "backstop-disabled": 46.7083,
+        "backstop-enabled": 100.0
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -639.5,
+        "improved": true
+      },
+      "label": "Unsafe-state duration (s)",
+      "metric": "unsafe_state_duration_s",
+      "values": {
+        "backstop-disabled": 639.5,
+        "backstop-enabled": 0.0
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -1.0002,
+        "improved": true
+      },
+      "label": "Maximum tank level (m)",
+      "metric": "max_tank_level_m",
+      "values": {
+        "backstop-disabled": 5.0,
+        "backstop-enabled": 3.9998
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -1.0002,
+        "improved": true
+      },
+      "label": "Max deviation from setpoint (m)",
+      "metric": "max_deviation_from_setpoint_m",
+      "values": {
+        "backstop-disabled": 1.8,
+        "backstop-enabled": 0.7998
+      }
+    },
+    {
+      "better": "higher",
+      "delta": {
+        "absolute_change": 1.0002,
+        "improved": true
+      },
+      "label": "Minimum safety margin (m)",
+      "metric": "minimum_safety_margin_m",
+      "values": {
+        "backstop-disabled": -0.5,
+        "backstop-enabled": 0.5002
+      }
+    },
+    {
+      "better": "lower",
+      "delta": {
+        "absolute_change": -3.3821,
+        "improved": true
+      },
+      "label": "Spill volume (m3)",
+      "metric": "spill_volume_m3",
+      "values": {
+        "backstop-disabled": 3.3821,
+        "backstop-enabled": 0.0
+      }
+    },
+    {
+      "better": "higher",
+      "delta": {
+        "absolute_change": 0.0,
+        "improved": null
+      },
+      "label": "Supervisory availability (%)",
+      "metric": "supervisory_availability_pct",
+      "values": {
+        "backstop-disabled": 100.0,
+        "backstop-enabled": 100.0
+      }
+    }
+  ],
+  "research_question": "Given that an adversary has achieved unauthorised control influence, which engineered constraint prevents that influence from becoming an unacceptable physical consequence?",
+  "scenario_id": "SCN-004",
+  "scenario_name": "Unauthorised setpoint mutation",
+  "seed": 4242,
+  "variants": [
+    {
+      "backstop_enabled": false,
+      "configuration_hash": "d14f929bef2b4bc8d99a84756231acbda9d724c2aa32595d92025a33bc891019",
+      "experiment_id": "EXP-SCN004-backstop-disabled-d14f929b",
+      "name": "backstop-disabled"
+    },
+    {
+      "backstop_enabled": true,
+      "configuration_hash": "41fa58ffa075409441e0926a32190b9e3e749601cf7fbe958f7864940ac47213",
+      "experiment_id": "EXP-SCN004-backstop-enabled-41fa58ff",
+      "name": "backstop-enabled"
+    }
+  ]
+}

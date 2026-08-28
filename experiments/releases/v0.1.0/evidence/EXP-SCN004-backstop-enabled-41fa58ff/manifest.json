@@ -1,0 +1,93 @@
+{
+  "artifacts": {
+    "configuration.json": {
+      "bytes": 13147,
+      "sha256": "39e1976f7302bed0fb0ffc0bb288b72a65425fc6b587d40875bf223d81c7432a"
+    },
+    "consequences.json": {
+      "bytes": 716,
+      "sha256": "cb5b4b1cd9efe9175a8bbf4ea37bbe3fef907d68aa4b5d9a72c7055c20dc7ccd"
+    },
+    "control.csv": {
+      "bytes": 238534,
+      "sha256": "3d90b694857eb1c996369c337f7f5df9ca0487532b8cf1d31cab973a64cfdcb8"
+    },
+    "environment.json": {
+      "bytes": 519,
+      "sha256": "044d8c5b414b3cb10e15e8554ebbdcb8e497573928b5470d6a68699eaab3e83b"
+    },
+    "events.jsonl": {
+      "bytes": 734268,
+      "sha256": "b1e1b45be051b49e1ab368f9293e40788ad95911ad440b872f055f92f7872e6c"
+    },
+    "graph.json": {
+      "bytes": 1586,
+      "sha256": "5ea4266da7d46bfa39b94d36dd268aadebff42b06b5ea6b54995575287209457"
+    },
+    "invariants.json": {
+      "bytes": 2269247,
+      "sha256": "b85614ac1dfa2d9b701010247065c34c47d7daefafa01043f412306b8188acad"
+    },
+    "metrics.json": {
+      "bytes": 2232,
+      "sha256": "9b2462b4343e738698c8dc7a03090f85390d589331a1d34721580e4946264c2a"
+    },
+    "process.csv": {
+      "bytes": 314918,
+      "sha256": "32ca086df0142a7a41923cdc38d0634fb619302a744bfb939945b51a73418551"
+    },
+    "scenario.json": {
+      "bytes": 2516,
+      "sha256": "99f302ee4e9cd3df649535ce9a420749b9e7673918a925fcba727a4e7a8c3c28"
+    },
+    "summary.md": {
+      "bytes": 3826,
+      "sha256": "84a2c0af9b8cd0372b3efae9b1983d2d48c44b54d71d2d190bbe045c279e85b4"
+    },
+    "verification.json": {
+      "bytes": 721,
+      "sha256": "ee91c34e8d04e78d911d4058ef174bb10d8401029930b259cd0ea9b40638bca9"
+    }
+  },
+  "blackstart_version": "0.1.0",
+  "config_hash": "41fa58ffa075409441e0926a32190b9e3e749601cf7fbe958f7864940ac47213",
+  "determinism": {
+    "configuration_hash": "41fa58ffa075409441e0926a32190b9e3e749601cf7fbe958f7864940ac47213",
+    "duration_s": 1200.0,
+    "seed": 4242,
+    "steps": 2400,
+    "timestep_s": 0.5
+  },
+  "experiment_id": "EXP-SCN004-backstop-enabled-41fa58ff",
+  "git_commit": "f86531361f6c47d3b91d24d3311dcc3c99736c53",
+  "integrity": {
+    "algorithm": "sha256",
+    "digest": "d304e4c8fc51030388353d2ace5ac3ba3797d69be493d3a9f09a8dea791b86a0",
+    "scope": "artifact digests only; provenance excluded"
+  },
+  "provenance": {
+    "generated_at": "2026-08-28T02:52:21+00:00",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+    "python": "3.12.13"
+  },
+  "result": {
+    "maximum_consequence": "C1",
+    "service_availability_pct": 100.0,
+    "unsafe_state_duration_s": 0.0,
+    "violated_invariants": [
+      "INV-004"
+    ]
+  },
+  "scenario": {
+    "category": "cyber-effect",
+    "id": "SCN-004",
+    "name": "Unauthorised setpoint mutation",
+    "research_question": "Given that an adversary has achieved unauthorised control influence, which engineered constraint prevents that influence from becoming an unacceptable physical consequence?"
+  },
+  "scenario_hash": "c7bd2b482eaefd81d936869900043f6b0d04f40cbd3f15e74b73b33c8336c083",
+  "source_fingerprint": "ff16c22261824171ebcf4aa267dc9d0d96026f931a51ea761049cd32dad0c963",
+  "variant": {
+    "backstop_enabled": true,
+    "name": "backstop-enabled"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "artifacts": {
+    "comparison.json": {
+      "bytes": 4924,
+      "sha256": "43e98ef414db9c642dbca32b5221d9f72673eff4b1ca0d15d9b569f6bb678b71"
+    },
+    "figures/consequence-path.svg": {
+      "bytes": 3032,
+      "sha256": "899f995d5528d4340d126926ad58e4f9b030ef06930133a7e26156cd8b2cf1ce"
+    },
+    "figures/exp-bs-001-control.svg": {
+      "bytes": 49094,
+      "sha256": "71b414e6ce3d872d417aa37567a0853018f943ed510eb2413fa27eefb8afebd1"
+    },
+    "figures/exp-bs-001-safety-margin.svg": {
+      "bytes": 55913,
+      "sha256": "4d6272e53bd1ba5eb40065148adaaa8f61c204e12f883f48d453c3f9d1c4a9e4"
+    },
+    "figures/exp-bs-001-trajectory.svg": {
+      "bytes": 55369,
+      "sha256": "02bb248018f155bc6af3b38088865ae639cb92da5a342bdbbbd397d601658676"
+    },
+    "report.md": {
+      "bytes": 6778,
+      "sha256": "e9198645da890e2f3f66ce3b866eb1c63ad38d401fbe7545341373fa3fd7d601"
+    },
+    "results-table.md": {
+      "bytes": 522,
+      "sha256": "90e05594271a49955706960ec0bd8881b385e3129c84b12d607fb07ee6d471bc"
+    }
+  },
+  "experiment": "EXP-BS-001-v1",
+  "release": "v0.1.0",
+  "source_fingerprint": "ff16c22261824171ebcf4aa267dc9d0d96026f931a51ea761049cd32dad0c963"
+}

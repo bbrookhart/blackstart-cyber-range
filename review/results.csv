@@ -1,0 +1,8 @@
+metric,unit,backstop_off,backstop_on
+Maximum tank level,m,5.0,3.9998
+Unsafe duration,s,639.5,0.0
+Invariant violation intervals,count,3,1
+Invariant violation duration,s,1660.0,0.5
+Maximum consequence,class,C4,C1
+Mission service availability,percent,46.7083,100.0
+Recovery time,status_or_seconds,NOT_RECOVERED,NOT_RECOVERED
