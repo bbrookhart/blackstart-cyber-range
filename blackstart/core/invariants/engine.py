@@ -12,6 +12,7 @@ from blackstart.core.invariants.water import (
     DryRunInvariant,
     MaximumLevelInvariant,
     MinimumReserveInvariant,
+    SetpointBoundInvariant,
     TelemetryIntegrityInvariant,
 )
 from blackstart.core.models import InvariantStatus, ProcessState
@@ -53,6 +54,8 @@ def _build_one(spec: InvariantSpec, process: ProcessConfig) -> Invariant:
         case "INV-004":
             return CommandRateInvariant(spec)
         case "INV-005":
+            return SetpointBoundInvariant(spec)
+        case "INV-006":
             return TelemetryIntegrityInvariant(spec)
         case _:
             msg = (
@@ -97,6 +100,7 @@ class InvariantEngine:
     def __init__(self, invariants_config: InvariantsConfig, process: ProcessConfig) -> None:
         """Build the invariant set from configuration."""
         self._invariants = build_invariants(invariants_config, process)
+        self._evaluations: list[dict[str, Any]] = []
 
     @property
     def invariants(self) -> tuple[Invariant, ...]:
@@ -106,6 +110,7 @@ class InvariantEngine:
     def evaluate(self, state: ProcessState, dt_s: float) -> InvariantStepResult:
         """Evaluate all invariants against ``state``."""
         samples = tuple(inv.evaluate(state, dt_s) for inv in self._invariants)
+        self._evaluations.extend(sample.as_dict() for sample in samples)
         return InvariantStepResult(t_s=state.t_s, samples=samples)
 
     def finalise(self, final_t_s: float) -> list[InvariantOutcome]:
@@ -120,4 +125,5 @@ class InvariantEngine:
             "total_violations": sum(o.violation_count for o in outcomes),
             "violated_invariants": [o.invariant_id for o in outcomes if o.violated],
             "outcomes": [o.as_dict() for o in outcomes],
+            "evaluations": list(self._evaluations),
         }

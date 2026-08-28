@@ -215,8 +215,12 @@ edges:
   - from: "CTRL-LEVEL"
     to: "INV-004"
     relation: "CAN_CAUSE"
-  - from: "LIT-001"
+  - from: "CTRL-LEVEL"
     to: "INV-005"
+    relation: "CAN_CAUSE"
+    note: "The effective target can violate the engineering control envelope."
+  - from: "LIT-001"
+    to: "INV-006"
     relation: "CAN_CAUSE"
     note: "Divergence of the operator channel from physical truth."
 
@@ -255,3 +259,4 @@ invariant_consequences:
   INV-003: "C4"
   INV-004: "C1"
   INV-005: "C1"
+  INV-006: "C1"

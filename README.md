@@ -4,7 +4,9 @@
 
 <br>
 
-**A consequence-driven cyber-physical resilience range for critical infrastructure under compromise.**
+**A Consequence-Driven Cyber-Physical Resilience Range**
+
+> **Assume compromise. Preserve the mission.**
 
 [![CI](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/ci.yml/badge.svg)](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/ci.yml)
 [![Security](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/security.yml/badge.svg)](https://github.com/bbrookhart/blackstart-cyber-range/actions/workflows/security.yml)
@@ -14,552 +16,284 @@
 
 </div>
 
----
-
-## The research question
-
-Most industrial security work asks whether an attacker can get into an OT network.
-BLACKSTART asks the question that matters after that one has been answered badly:
-
-> **If digital compromise occurs, can the physical mission still be kept inside
-> acceptable bounds?**
-
-The premise is that perimeter security will sometimes fail, and that the useful
-engineering question is what stands between a compromised digital environment and
-an unacceptable physical consequence. BLACKSTART reasons across the whole chain:
-
-```text
-cyber event → digital capability → system dependency → control state
-  → physical state → mission consequence → engineering response
-    → mission preserved, or not
-```
-
-It models a fictional municipal water storage and pumping process as a
-deterministic digital twin, evaluates explicit safety invariants against
-ground-truth physical state, derives consequence severity from measurable
-conditions, and measures whether a simulated **independent engineering
-constraint** changes the outcome.
+**Research prototype — v0.1.0.** In the frozen synthetic water-storage
+experiment, the unauthorized 4.80 m supervisory setpoint drove the unprotected
+process to **5.0000 m**, **639.5 s outside the safety envelope**, and consequence
+**C4**. Under the same code, state, demand, seed, timestep, and attack event, the
+independent backstop limited the protected run to **3.9998 m**, **0.0 s unsafe**,
+and consequence **C1**.
 
 > [!IMPORTANT]
-> BLACKSTART contains no exploitation tooling and cannot act on any system
-> outside its own process — a property enforced structurally and verified by
-> tests, not promised in a policy. See [ADR-006](docs/adr/ADR-006-scenario-safety-boundary.md)
-> and [SECURITY.md](SECURITY.md).
->
-> Every parameter is **invented**. A BLACKSTART result describes BLACKSTART.
-> Read [docs/limitations.md](docs/limitations.md) before drawing conclusions.
+> This is a result about a fictional deterministic simulation. It is not an
+> operational water-system safety claim, field validation, certification, or
+> evidence of framework compliance.
 
----
+## Measured result
 
-## Project status
+<!-- BEGIN GENERATED EXP-BS-001 RESULTS -->
 
-**v0.1.0 — first operational research release.** All figures below are measured
-output from [`evidence/baseline/`](evidence/baseline/), reproduced byte-for-byte
-in CI on every change.
+### Flagship experiment — EXP-BS-001
 
-| Capability | Status |
+| Metric | Backstop OFF | Backstop ON | Difference |
+| --- | ---: | ---: | --- |
+| Maximum tank level | 5.0 m | 3.9998 m | 1.0002 reduction |
+| Unsafe duration | 639.5 s | 0.0 s | 639.5000 reduction |
+| Invariant violation intervals | 3 | 1 | 2.0000 reduction |
+| Invariant violation duration | 1660.0 s | 0.5 s | 1659.5000 reduction |
+| Maximum consequence | C4 | C1 | C4 → C1 |
+| Mission service availability | 46.7083 % | 100.0 % | +53.2917 improvement |
+| Recovery time | NOT_RECOVERED | NOT_RECOVERED | no change |
+
+<!-- END GENERATED EXP-BS-001 RESULTS -->
+
+This table is replaced from each run's `metrics.json` by `make release-artifacts`;
+it is not independently maintained. The canonical evidence is under
+[`experiments/releases/v0.1.0/`](experiments/releases/v0.1.0/).
+
+![EXP-BS-001 true physical trajectory](assets/exp-bs-001-trajectory.svg)
+
+![Protected requested versus effective setpoint](assets/exp-bs-001-control.svg)
+
+The attack remains visible in both conditions. The backstop changes the
+**effective** setpoint and physical consequence; it does not delete the request.
+
+## Research question and hypothesis
+
+> **If an adversary is assumed capable of modifying a critical control parameter
+> after penetrating portions of the digital environment, can an independently
+> enforced engineering backstop prevent that digital compromise from producing
+> an unacceptable physical consequence?**
+
+**H1:** the independently enforced backstop will reduce or eliminate the
+unacceptable physical consequence caused by the unauthorized control-state
+mutation.
+
+**H0:** the backstop produces no meaningful difference under the defined
+experiment.
+
+The observed deterministic comparison is inconsistent with H0 for the frozen
+configuration. No statistical significance or real-world generalization is
+claimed.
+
+## Flagship experiment
+
+`EXP-BS-001-v1` runs `SCN-004 — Unauthorized Setpoint Mutation` twice:
+
+| Controlled element | Value |
 | --- | --- |
-| Deterministic physical twin | ✅ Operational |
-| Safety invariants (5) | ✅ Operational |
-| Consequence taxonomy (C0–C5) | ✅ Operational |
-| Scenario engine (6 scenarios) | ✅ Operational |
-| Engineering backstop (5 rules) | ✅ Operational |
-| Structured evidence + byte-level reproduction | ✅ Operational |
-| Consequence dependency graph | ✅ Operational |
-| Zoned container topology | ✅ Operational — architecture tests pass; started and probed in CI |
-| Network telemetry | ⚪ Not implemented |
-| Detection / IDS integration | ⚪ Not implemented — detection metrics report `NOT_IMPLEMENTED` |
-| Valve command-path constraint | ⚪ Known gap, [recorded](threat-model/consequence-paths.yaml) |
-| Formal verification | 🟡 [Roadmap](docs/formal-assurance-roadmap.md) — not claimed |
-| Evidence signing | 🟡 Roadmap — integrity is tamper-*evident* only |
-| Hardware-in-the-loop | ⚪ Research direction |
+| Process | Fictional municipal water storage and pumping |
+| Simulation | 1200 s, explicit Euler, 0.5 s timestep |
+| Seed | 4242 |
+| Initial state and demand | Identical in both conditions |
+| Mutation | At 180 s, requested setpoint becomes 4.80 m |
+| Condition A | Backstop OFF |
+| Condition B | Backstop ON |
+| Only changed factor | Backstop state |
 
-**377 tests** · **95% branch coverage** on safety-critical modules (90% gate) ·
-strict `mypy` across 74 files.
+The unprotected condition is a meaningful baseline failure: the true level
+crosses the 4.50 m maximum-safe boundary and saturates at the synthetic 5.00 m
+weir crest. In the protected condition, the same request is recorded but the
+effective target remains at the configured 3.60 m engineering maximum.
 
----
+## Physical process
 
-## Flagship result
-
-**SCN-004 — unauthorised setpoint mutation.** The supervisory level setpoint is
-changed to 4.80 m, above the 4.50 m safe working level, by something other than
-legitimate operator action. Every digital component then behaves exactly as
-designed: the controller faithfully pursues the setpoint it was given, and the
-instrumentation reports honestly. Nothing malfunctions.
-
-The same scenario, the same seed, the same configuration — differing in exactly
-one respect.
-
-<div align="center">
-<img src="assets/experiment-preview.svg" alt="Measured tank level for SCN-004 with and without the engineering constraint" width="100%">
-</div>
-
-| Metric | Backstop **disabled** | Backstop **enabled** |
-| --- | --- | --- |
-| Maximum consequence | **C4** — unsafe physical state | **C1** — minor deviation |
-| Invariant violations | 2 | 1 |
-| Violated invariants | INV-001, INV-004 | INV-004 |
-| Service availability | 46.71% | **100.00%** |
-| Unsafe-state duration | **639.5 s** (53.3% of run) | **0.0 s** |
-| Maximum tank level | **5.000 m** (weir crest) | 3.9998 m |
-| Spill volume | **3.382 m³** | 0.000 m³ |
-| INV-001 first violated | t = 560.5 s | never |
-
-`EXP-SCN004-backstop-disabled-a6e4affc` · `EXP-SCN004-backstop-enabled-457bc4c1`
-
-<details>
-<summary><b>Three things about this result that are easy to misread</b></summary>
-
-<br>
-
-**The setpoint clamp did the work; the high-level trip never fired.**
-BS-01 acted on 2040 scans, BS-02 on 16, and **BS-03 zero times**. The constraint
-worked by ensuring the controller never pursued an unsafe target, not by catching
-the result at the last moment. Two layers existed; only the outer one was needed.
-
-An earlier revision of this project applied the clamp *downstream* of the control
-request. The controller then chased 4.80 m and was stopped only by the trip,
-peaking at 4.19 m against a 4.20 m trip level. The scenario "passed" either way —
-which is exactly why per-rule activation counts are reported.
-
-**Service availability fell without any loss of service.** Demand was met
-throughout both runs. The critical function CF-001 requires *both* delivered
-service *and* no violated safety invariant; a process delivering water perfectly
-while sitting above its safe level is not performing its critical function.
-
-**The anomalous command was detectable in both variants.** INV-004 observes the
-*requested* setpoint rather than the constrained one, so evidence that a
-physically implausible command was issued survives the constraint refusing it.
-That is a detection opportunity that does not depend on the defence having failed
-— though nothing in v0.1 consumes it.
-
-</details>
-
----
-
-## How the constraint breaks the chain
-
-<div align="center">
-<img src="assets/consequence-path.svg" alt="Cyber to physical consequence path, with and without the engineering constraint" width="100%">
-</div>
-
-The constraint's defining property is that **it does not try to decide whether a
-command is legitimate**. The controller service accepts a setpoint write, records
-the declared origin, and applies exactly the same policy regardless of what the
-writer claimed to be. A defence that depended on correct attribution would fail
-precisely when attribution failed — which is the situation after compromise.
-
----
-
-## Architecture
-
-<div align="center">
-<img src="assets/architecture.svg" alt="BLACKSTART zone and conduit architecture" width="100%">
-</div>
-
-```mermaid
-flowchart TB
-    subgraph RANGE[" "]
-        direction TB
-        A["<b>ENTERPRISE ZONE</b><br/>enterprise-workstation<br/><i>127.0.0.1:8080 — the only published port</i>"]
-        B["<b>INDUSTRIAL DMZ</b><br/>idmz-broker<br/><i>internal</i>"]
-        C["<b>OT SUPERVISORY ZONE</b><br/>historian · hmi<br/><i>internal</i>"]
-        D["<b>CONTROL / PROCESS ZONE</b><br/>controller<br/><i>internal</i>"]
-        F["<b>EBS-001</b><br/>independent engineering constraint"]
-        E["<b>PHYSICAL PROCESS TWIN</b><br/>tank · pump · valve · instrumentation"]
-    end
-    G["<b>EVIDENCE &amp; METRICS</b><br/>invariants · consequences · reproduction"]
-
-    A -->|CDT-001 pull| B
-    B -->|CDT-002 pull| C
-    C -->|"CDT-004 pull + <b>command</b>"| D
-    D --> F
-    F -->|allowed / denied| E
-    E --> G
-    D --> G
-    C --> G
-```
-
-Four zones, four isolated Docker networks, **one bridging service per conduit**.
-No service holds both an enterprise network and an OT-side network; reaching the
-controller from the enterprise zone requires three hops through three services.
-Telemetry flows outward; CDT-004 is the only conduit carrying commands.
-
-`configs/architecture.yaml` is the authority, and
-[`tests/architecture/`](tests/architecture/) parses `docker-compose.yml` and fails
-if the two disagree. A segmentation claim nobody checks decays into one that is
-false.
-
----
-
-## Consequence-driven methodology
-
-BLACKSTART does not start from *what CVEs exist?* It starts from *what physical
-outcomes must never occur?*
+The model contains a source, inlet pump, constant-area storage tank, and gravity
+outlet serving synthetic demand. True physical state and reported sensor state
+are separate variables. The update is:
 
 ```text
-1. critical function        CF-001: keep water available and the process safe
-2. unacceptable outcomes    C0..C5, with quantitative thresholds
-3. enabling systems         tank, pump, valve, controller, instrumentation
-4. digital dependencies     what can influence each of the above
-5. credible paths           enumerated from the dependency graph
-6. detection opportunities  where a condition becomes observable
-7. engineering mitigations  constraints that break a path
-8. recovery                 what returns the mission to acceptable bounds
+level[t+1] = level[t] + (inflow[t] - outflow[t]) × Δt / tank_area
 ```
 
-A vulnerability-first analysis produces a list that grows without bound and never
-says which items matter. This ordering produces a short list of things that can
-actually reach the physical process, and a defensible reason for each. It is
-*informed by* publicly described consequence-driven engineering principles;
-BLACKSTART is **not** an implementation of CCE and implies no endorsement.
+Units, synthetic parameter rationale, Euler stability check, limits, and
+saturation are documented in [the physical model](docs/physical-model.md). The
+mission-critical function is to satisfy synthetic demand while remaining inside
+the defined safe operating bounds.
 
-Full method: [docs/methodology.md](docs/methodology.md).
+## Engineering backstop and invariants
 
----
+EBS-001 is a policy component between the untrusted supervisory request and
+physical actuation:
 
-## Quick start
+```text
+supervisory request → engineering backstop → effective target
+                    → controller → pump → tank → invariant → consequence
+```
+
+The scenario can mutate the request but cannot mutate EBS-001 policy. With the
+backstop active, BS-01 bounds the setpoint and BS-02 constrains slew before the
+normal controller acts. Other rules enforce high-level, suction, and anti-cycle
+permissives.
+
+| ID | Machine-evaluated property | Flagship role |
+| --- | --- | --- |
+| INV-001 | True tank level ≤ 4.50 m | Defines the C4 upper-bound breach |
+| INV-002 | True tank level ≥ 1.00 m | Protects required reserve |
+| INV-003 | Pump not enabled with unsafe source level | Dry-run protection |
+| INV-004 | Requested command rate within 0.05 m/s | Preserves the anomalous request as evidence |
+| INV-005 | Effective setpoint between 1.50 and 3.60 m | Tests the central backstop property |
+| INV-006 | Reported level tracks true level within 0.10 m | Cross-view integrity check |
+
+Every timestep evaluation, including observed value, threshold, status, and
+timestamp, is serialized to `invariants.json`. The invariant engine does not
+share implementation code with the backstop.
+
+## Causal evidence
+
+![SCN-004 consequence path](assets/consequence-path.svg)
+
+The machine-readable `graph.json` records the unprotected path and protected
+interruption. Inspect it directly:
+
+```bash
+uv run blackstart graph consequence-path SCN-004
+```
+
+The causal graph is intentionally implemented with NetworkX; no graph database
+is required.
+
+## Reproduce the result
+
+From a clean clone, no credentials, services, database, or manual configuration
+are needed:
 
 ```bash
 git clone https://github.com/bbrookhart/blackstart-cyber-range
 cd blackstart-cyber-range
-
-make bootstrap          # create the venv, install everything
-make test               # 377 tests
-make demo               # reproduce the flagship comparison
-```
-
-Reproduce the flagship result and verify it independently:
-
-```bash
-uv run blackstart experiment compare SCN-004 \
-    --variant backstop-disabled --variant backstop-enabled
-
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/baseline
-```
-
-The second command re-executes each committed experiment from its recorded
-configuration and seed and compares every artefact **byte-for-byte**.
-
-<details>
-<summary><b>Command surface</b></summary>
-
-<br>
-
-```bash
-blackstart scenario list                     # the scenario catalogue
-blackstart scenario show SCN-004             # one scenario in full
-blackstart experiment run SCN-001            # run one scenario
-blackstart experiment compare SCN-004        # run and compare variants
-blackstart evidence verify --all --reproduce # integrity + re-execution
-blackstart graph supports --critical-function CF-001
-blackstart graph influences INV-001
-blackstart graph paths --min-class C4
-blackstart graph reduction
-blackstart config validate
-```
-
-```bash
-make bootstrap lint typecheck test coverage audit sbom docs
-make up health demo down          # zoned container topology (needs Docker)
-make check                        # the full local gate
-```
-
-</details>
-
----
-
-## Safety invariants
-
-Invariants are the ground-truth record of whether the process was actually safe.
-They evaluate true physical state, not what the control system believed — with
-one deliberate exception.
-
-| ID | Property | Limit | Tolerance | Maps to |
-| --- | --- | --- | --- | --- |
-| **INV-001** | Tank level ≤ safe working level | 4.50 m | none | C4 |
-| **INV-002** | Level ≥ operational reserve | 1.00 m | 120 s | C3 |
-| **INV-003** | Pump not energised without suction | 0.50 m source | 10 s | C4 |
-| **INV-004** | Command rate physically achievable | 0.05 m/s · 12 starts/h | none | C1 |
-| **INV-005** | Reported level tracks true level | 0.10 m | 5 s | C1 |
-
-Three design decisions carry most of the weight:
-
-- **Stateful temporal predicates, not assertions.** "Below reserve" is not a
-  violation; "below reserve for longer than 120 s" is.
-- **Three-valued status** (`OK` / `APPROACHING` / `VIOLATED`), so the *warning* an
-  engineered control bought is measurable, not just the breach.
-- **INV-005 is the only invariant reading both views**, because comparing them is
-  its purpose. This is why a scenario that deceives the operator cannot also
-  falsify the experimental record.
-
-The invariant checker **shares no code with the engineering backstop** — verified
-by AST analysis. Without that separation, "backstop enabled ⇒ no violations"
-would be a tautology rather than a measurement.
-[ADR-004](docs/adr/ADR-004-safety-invariant-design.md).
-
----
-
-## Scenario catalogue
-
-| ID | Name | Category | Backstop off → on | Notes |
-| --- | --- | --- | --- | --- |
-| **SCN-001** | Nominal operation | baseline | C0 → C0 | The clean baseline every result is read against |
-| **SCN-002** | Demand surge | physical | C2 → C2 | Benign disturbance, **zero** invariant violations |
-| **SCN-003** | Sensor integrity loss | cyber-effect | **C4 → C1** | INV-005 violated in *both* |
-| **SCN-004** | Unauthorised setpoint mutation | cyber-effect | **C4 → C1** | Flagship |
-| **SCN-005** | Loss of supervisory visibility | operational | C0 → C0 | Loss of view ≠ loss of control |
-| **SCN-006** | Source depletion / dry-run | physical | **C5 → C3** | The interlock relocates a consequence |
-
-<details>
-<summary><b>The results that complicate the argument — and are kept anyway</b></summary>
-
-<br>
-
-**SCN-002 — not every bad outcome is a security event.** A large benign demand
-surge produces a genuine C2 service consequence with **zero** invariant
-violations and no adversary. A range that flagged this as a security event would
-be producing false positives; one that called it harmless would be ignoring a
-real loss of service. The classifier reaches the right answer without being told,
-and the backstop correctly makes no difference at all.
-
-**SCN-003 — the constraint preserves the process, not the operator.** A falsified
-level transmitter drives the tank to the weir crest without the constraint. With
-it, the independent high-level trip (BS-03, and *not* BS-01 here) holds the level
-safe. But **INV-005 is violated in both variants**: the engineering control
-defends the physical mission and does nothing whatsoever for situational
-awareness.
-
-**SCN-006 — an engineered control can relocate a consequence rather than remove
-it.** The dry-run interlock prevents the pump being destroyed (C5 → C3). It does
-not prevent the loss of service, because the underlying problem is that there is
-no supply, and no control on the command path can create water.
-
-**The architectural reduction is modest.** Of 40 enumerated dependency paths
-reaching C4 or above, the backstop interrupts 18 — **45%**. Every
-`CTRL-RESERVE → VLV-001` path is uninterrupted: the constraint covers the pump
-command path and applies nothing to the valve. That is a real gap in the current
-design, surfaced by querying the model rather than by inspection, and held
-visible by a test.
-
-A result set in which the defence improved every number would be evidence of a
-rigged model, not a good defence.
-
-</details>
-
----
-
-## Evidence model
-
-Every experiment writes a self-describing directory:
-
-```text
-EXP-SCN004-backstop-enabled-457bc4c1/
-├── manifest.json       provenance, seed, config hash, per-artefact SHA-256
-├── configuration.json  the fully resolved configuration actually executed
-├── events.jsonl        ordered structured event stream
-├── process.csv         per-timestep true AND reported physical state
-├── invariants.json     per-invariant outcome, intervals, peak excursion
-├── consequences.json   consequence timeline and maximum severity
-├── metrics.json        computed research metrics
-└── summary.md          human-readable account, with its own limitations
-```
-
-An experiment is a pure function of `(version, configuration, seed)`, and the
-**experiment identifier is derived from that triple** — so re-running reproduces
-the package byte-for-byte, identifier included.
-
-> [!NOTE]
-> Evidence integrity is **tamper-evident, not tamper-proof**. Digests catch
-> corruption, partial writes and stale files. Anyone who can edit the artefacts
-> can recompute the manifest. Signing is a roadmap item; claiming more today would
-> be an overstatement. [ADR-005](docs/adr/ADR-005-evidence-and-reproducibility.md)
-
-Metrics whose underlying capability does not exist report the literal string
-`NOT_IMPLEMENTED`. BLACKSTART v0.1 has no detection capability, so detection
-latency, containment latency and false-positive rate all carry that marker rather
-than a plausible-looking zero.
-
----
-
-## Threat model
-
-Consequence-first: it starts from the outcomes that must never occur and reasons
-backward to the digital dependencies that could produce them.
-
-- [Assumptions](threat-model/assumptions.md) — each marked with what happens to
-  the conclusions **if it is wrong**
-- [Trust boundaries](threat-model/trust-boundaries.md) — five, each enforced by
-  something checkable
-- [Consequence paths](threat-model/consequence-paths.yaml) — all 40, **generated**
-  from the dependency graph and kept in sync by a test
-- [ATT&CK for ICS coverage](threat-model/attack-ics-mapping.yaml) — including the
-  objectives BLACKSTART does *not* model
-
-The adversary is assumed able to obtain influence over selected digital
-components. **BLACKSTART does not model how.** It therefore offers no evidence
-about whether such influence is achievable against any real system — deliberate
-scoping, and a real limitation.
-
----
-
-## Standards and framework traceability
-
-All mappings are **informational**. No conformance, compliance, certification or
-endorsement is claimed or implied.
-
-| Framework | Document | Coverage |
-| --- | --- | --- |
-| MITRE ATT&CK for ICS | [attack-ics.yaml](framework-mappings/attack-ics.yaml) | 4 techniques, 2 tactics; none of the intrusion lifecycle |
-| NIST SP 800-82r3 | [nist-800-82.md](framework-mappings/nist-800-82.md) | Architecture and OT-priority principles |
-| NIST CSF 2.0 | [nist-csf-2.0.yaml](framework-mappings/nist-csf-2.0.yaml) | Function level only — see below |
-| CISA Cross-Sector CPGs | [cisa-cpg.md](framework-mappings/cisa-cpg.md) | ~5 goal areas; mostly non-applicable |
-| IEC 62443 | [iec-62443-concepts.md](framework-mappings/iec-62443-concepts.md) | Public concepts; no Security Level claimed |
-
-Two things worth noting about how these were produced:
-
-**Identifiers are verified before use.** ATT&CK techniques were requested directly
-from `attack.mitre.org`; three identifiers considered during design turned out to
-have been **renumbered upstream** (T0855 → T1692.001, T0856 → T1692.002,
-T0804 → T1691.002) and are recorded as such rather than used in obsolete form.
-
-**CSF 2.0 is mapped at Function level only** because Category and Subcategory
-identifiers could not be verified against the authoritative publication. Mapping
-coarsely was preferred to asserting identifiers reproduced from memory — which is
-precisely the failure this project argues against.
-
-The mapping file also records **rejected** mappings with reasons. T0880 *Loss of
-Safety* was declined for scenarios producing an unsafe process state, because that
-technique concerns loss of safety *systems* — and here the safety instrumentation
-stays intact and reports correctly throughout.
-
----
-
-## Repository map
-
-```text
-blackstart/            the deterministic simulation kernel
-├── core/              physics · invariants · consequence · dependency graph
-│                      (sealed: no network, no subprocess, no wall clock)
-├── controller/        control logic · PLC scan · engineering backstop
-├── scenario_engine/   schema · closed effect registry · runner
-├── telemetry/         event envelope and exporters
-├── evidence/          packaging · integrity · byte-level reproduction
-├── analysis/          metrics and variant comparison
-└── cli/               the reviewer-facing surface
-
-services/              zoned demonstration topology (produces no results)
-configs/               process · invariants · consequences · architecture · assets
-scenarios/             SCN-001 … SCN-006, with measured expectations
-evidence/baseline/     committed reference results, reproduced in CI
-experiments/baseline/  the flagship experiment write-up
-threat-model/          assumptions · trust boundaries · consequence paths
-framework-mappings/    ATT&CK · NIST · CISA · IEC, with verification dates
-docs/                  methodology · limitations · reviewer guide · ADRs 001–006
-tests/                 unit · property · integration · architecture
-```
-
----
-
-## Reviewer path
-
-A ten-minute route with exact commands is in
-**[docs/reviewer-guide.md](docs/reviewer-guide.md)**, including a section on
-*what to attack if you want to find weaknesses*.
-
-The five commands:
-
-```bash
 make bootstrap
 make test
-make demo
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/baseline
-uv run blackstart graph paths --min-class C4
+make experiment
 ```
 
----
+The complete release gate is:
 
-## Roadmap
+```bash
+scripts/reproduce_exp_bs_001.sh
+```
 
-The highest-value next milestone is **network telemetry and passive detection**
-([M9](docs/roadmap.md)). It is the reason every detection metric currently reads
-`NOT_IMPLEMENTED`, and it would unlock the measurement that matters most: the
-false-positive rate against the SCN-002 benign disturbance.
+Useful commands:
 
-Also planned: constraining the valve command path, OT protocol emulation, evidence
-signing, formal verification of the backstop policy, and statistical experimental
-design. Full list with rationale: [docs/roadmap.md](docs/roadmap.md).
+```bash
+uv run blackstart status
+uv run blackstart experiment run SCN-004 --backstop off
+uv run blackstart experiment run SCN-004 --backstop on
+uv run blackstart experiment compare SCN-004 --backstop off --backstop on
+uv run blackstart evidence verify --all --reproduce --evidence-root evidence/local
+for directory in evidence/local/EXP-*; do
+  uv run blackstart experiment verify-results "$(basename "$directory")" \
+    --evidence-root evidence/local
+done
+make results
+```
 
----
+## Evidence and independent verification
+
+Each condition produces:
+
+```text
+evidence/<experiment-id>/
+├── manifest.json        provenance and SHA-256 for every major artifact
+├── environment.json     runtime, OS, architecture, image, and seed
+├── configuration.json   fully resolved configuration
+├── scenario.json        exact scenario executed
+├── events.jsonl         common-envelope causal event stream
+├── process.csv          true and reported state per timestep
+├── control.csv          request, effective target, decision, and command
+├── invariants.json      every evaluation and violation interval
+├── consequences.json    classified consequence events
+├── metrics.json         primary metrics-engine output
+├── graph.json           causal path and protected interruption
+├── verification.json    independent calculation from process.csv
+└── summary.md           human-readable result and limitations
+```
+
+Verification rejects missing or unexpected artifacts, digest mismatches, schema
+errors, and inconsistent experiment IDs. A second implementation independently
+recalculates maximum level, unsafe duration, violation count, and maximum
+consequence from serialized evidence. Integrity is tamper-evident, not
+tamper-proof; no evidence signing is claimed.
+
+## Threat and consequence models
+
+The threat assumption is narrow: a skilled adversary already has enough access
+to alter a supervisory setpoint. BLACKSTART does **not** model initial access,
+malware delivery, credential theft, privilege escalation, lateral movement, or
+PLC exploitation. The trusted computing base is the physics engine, experiment
+orchestrator, EBS-001 policy, and evidence verifier. See the
+[threat model](docs/threat-model.md) and [assurance case](docs/assurance-case.md).
+
+Consequence classes are deterministic: C0 normal, C1 minor deviation, C2
+operational degradation, C3 required service degradation, C4 unsafe physical
+state, and C5 catastrophic mission failure. Thresholds and dwell times are
+configuration, not hidden constants.
+
+## Quality and traceability
+
+Ruff, strict mypy, pytest, Hypothesis property tests, integration tests,
+architecture tests, deterministic replay, schema checks, evidence verification,
+and an independent metric path run in CI. Safety-critical modules are held to a
+90% branch-coverage gate. The v0.1 release gate passed **385 tests** and measured
+**94.09% branch coverage** across the selected critical modules. CI also runs the
+flagship comparison and uploads its evidence and report.
+
+The dated [framework baseline](docs/framework-baseline.md) records the exact
+official versions used: ATT&CK for ICS v19.2 with a pinned dataset hash, NIST SP
+800-82 Rev. 3, NIST SP 1800-45, NIST CSF 2.0, NIST SP 800-61 Rev. 3, CISA CPG
+2.0, and INL CCE/CIE materials. Mappings are informational only and do not claim
+compliance, certification, or endorsement.
 
 ## Limitations
 
-> [!WARNING]
-> **A BLACKSTART result describes BLACKSTART.** It is a simulation of a fictional
-> process whose every parameter was invented. It is not evidence about how any
-> real water utility, control system, or piece of equipment would behave.
+- simplified single-tank process with synthetic parameters and telemetry;
+- no calibrated facility model, real utility, real network, or operational data;
+- no real PLC, hardware-in-the-loop, SCEPTRE integration, or field validation;
+- no real adversary or exploit chain—the mutation is a controlled fixture;
+- supervisory compromise is assumed, while backstop policy is outside the
+  modeled compromise;
+- one deterministic flagship scenario and no statistical inference;
+- no detection analytic, formal verification, safety case, or certification;
+- manifest hashes detect changes but are not signatures.
 
-In brief — the full statement is [docs/limitations.md](docs/limitations.md):
+The full boundary is in [docs/limitations.md](docs/limitations.md) and
+[docs/research-integrity.md](docs/research-integrity.md).
 
-- **No detection capability whatsoever.** No analytic, no rule, no network
-  telemetry.
-- **Effects, not mechanisms.** The scenarios begin from assumed compromise and say
-  nothing about whether it is achievable.
-- **The backstop's independent measurement channel is an assumption.** A real
-  independent element can itself be compromised.
-- **The valve command path is unconstrained.** A known, recorded gap.
-- **Segmentation demonstrates topology, not enforcement strength.**
-- **No statistical power.** One seed per run; the flagship finding is checked
-  across four. No confidence intervals, no significance claims.
-- **Tested, not proven.** No formal verification has been performed.
-- **Not a safety case.** No hazard analysis, no SIL, no Security Level, no
-  certification.
+## Future research
 
----
+The next experiment should evaluate a sensor-state manipulation against the
+same frozen process and independent measurement assumptions. Later work may
+cover redundant constraints, uncertainty, formal methods, hardware-in-the-loop,
+PLC integration, or SCEPTRE. None is claimed in v0.1.
 
 ## Responsible use
 
-BLACKSTART is a **defensive research simulation**, published so that engineers and
-researchers can reason rigorously about consequence-driven engineering.
+BLACKSTART is a defensive, isolated research simulation. It contains no malware,
+exploit, credential, persistence, lateral-movement, or scanning capability. Do
+not connect it to an operational control system or use real utility data. See
+[SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-It must never be connected to a real control system, exposed beyond the host, or
-loaded with real utility credentials, configurations or operational data. It
-contains no malware, no exploits, no credential tooling and no scanning
-capability, and contributions that would add them are refused.
-
-See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
-[docs/research-integrity.md](docs/research-integrity.md).
-
-**No affiliation with or endorsement by** Idaho National Laboratory, NIST, CISA,
-MITRE, Sandia National Laboratories, IEC, ISA, any government or agency, or any
-utility or vendor is claimed or implied.
-
----
+No affiliation with or endorsement by INL, NIST, CISA, MITRE, Sandia, IEC, ISA,
+any government, utility, or vendor is claimed or implied.
 
 ## Citation
 
 ```bibtex
 @software{blackstart_2026,
-  title  = {BLACKSTART: A Consequence-Driven Cyber-Physical Resilience Range
-            for Critical Infrastructure Under Compromise},
-  author = {Brookhart, Brian},
-  year   = {2026},
+  title   = {BLACKSTART: A Consequence-Driven Cyber-Physical Resilience Range
+             for Critical Infrastructure Under Compromise},
+  author  = {Brookhart, Brian},
+  year    = {2026},
   version = {0.1.0},
   license = {Apache-2.0},
-  url    = {https://github.com/bbrookhart/blackstart-cyber-range}
+  url     = {https://github.com/bbrookhart/blackstart-cyber-range}
 }
 ```
 
-Machine-readable metadata: [CITATION.cff](CITATION.cff). No affiliation or ORCID
-is recorded; both are omitted rather than guessed.
-
----
+Machine-readable metadata: [CITATION.cff](CITATION.cff).
 
 ## License
 
-[Apache License 2.0](LICENSE). All visual assets in [`assets/`](assets/) are
-original work committed to this repository; the experiment chart is rendered from
-measured evidence by [`scripts/render_experiment_preview.py`](scripts/render_experiment_preview.py).
+[Apache License 2.0](LICENSE). Result figures are generated from committed
+experiment evidence; source artwork is original to this repository.
 
 <div align="center">
 <br>

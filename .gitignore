@@ -19,10 +19,12 @@ sbom.json
 sbom.xml
 audit.json
 
-# Experiment output.
-# evidence/ is a committed directory (README + the checked-in baseline package).
-# Ad-hoc local runs land in evidence/local/ and are not committed.
+# Local/CI experiment output. Canonical release evidence is committed under
+# experiments/releases/.
 evidence/local/
+evidence/ci/
+experiments/local/
+experiments/ci/
 
 # Environment
 .env

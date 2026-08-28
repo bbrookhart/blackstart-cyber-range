@@ -1,229 +1,86 @@
-# Technical Reviewer Guide
+# Ten-Minute Reviewer Guide
 
-A ten-minute path through BLACKSTART, with exact commands. You should not need to
-reverse-engineer the repository to work out why it matters.
+The goal is to test the causal claim, not tour every repository feature.
 
-**Prerequisites:** Python 3.12+, [`uv`](https://docs.astral.sh/uv/). Docker only
-for the optional topology section.
+## Minute 0–2 — Read the question and result
+
+Read the first two README sections and
+[`review/experiment-summary.md`](../review/experiment-summary.md). Confirm that
+the exact question is post-compromise consequence containment, not intrusion
+prevention.
+
+The result to audit is:
+
+| Condition | Max true level | Unsafe duration | Max consequence |
+| --- | ---: | ---: | ---: |
+| Backstop OFF | 5.0000 m | 639.5 s | C4 |
+| Backstop ON | 3.9998 m | 0.0 s | C1 |
+
+## Minute 2–3 — Inspect the process
+
+Read [`docs/physical-model.md`](physical-model.md) and
+[`experiments/EXP-BS-001/config.yaml`](../experiments/EXP-BS-001/config.yaml).
+Check the explicit Euler update, 0.5 s timestep, 5.00 m saturation, 4.50 m
+maximum-safe limit, synthetic parameter statement, and separate true/reported
+state.
+
+## Minute 3–4 — Inspect the backstop and invariants
+
+Open `blackstart/controller/backstop.py`, `configs/invariants.yaml`, and
+`blackstart/core/invariants/water.py`. Verify that:
+
+- the scenario mutates the requested value, not EBS-001 policy;
+- BS-01 constrains the effective target before the normal controller acts;
+- INV-005 independently checks the effective 1.50–3.60 m target bound;
+- INV-001 evaluates true tank level against 4.50 m;
+- INV-006, not INV-005, compares reported and true state.
+
+## Minute 4–7 — Run EXP-BS-001
 
 ```bash
-git clone <repo> && cd blackstart-cyber-range
 make bootstrap
+make clean-results
+make experiment
 ```
 
----
+The terminal must show the same `SCN-004` event in both conditions and print the
+OFF, ON, and DELTA sections. No Docker services are required.
 
-## Minute 0–2 — The research question and the architecture
-
-BLACKSTART asks a harder question than whether an attacker can get into an OT
-network:
-
-> **If digital compromise occurs, can the physical mission still be kept inside
-> acceptable bounds?**
-
-The whole project is arranged around one causal chain:
-
-```text
-cyber event → digital capability → system dependency → control state
-  → physical state → mission consequence → engineering response
-    → mission preserved, or not
-```
-
-Read these three things, in this order:
-
-1. [`configs/consequences.yaml`](../configs/consequences.yaml) — what must never
-   happen, quantitatively. Note that consequence severity is **derived** from
-   measurable conditions, never assigned.
-2. [`configs/invariants.yaml`](../configs/invariants.yaml) — the five safety
-   invariants, each with a rationale.
-3. [`docs/adr/ADR-004-safety-invariant-design.md`](adr/ADR-004-safety-invariant-design.md)
-   — in particular *why the invariant checker shares no code with the safety
-   control*. Without that separation, the headline result would be a tautology.
-
-Then confirm everything loads and cross-validates:
+## Minute 7–9 — Inspect and verify evidence
 
 ```bash
-uv run blackstart config validate
-```
+uv run blackstart evidence verify --all --reproduce \
+  --evidence-root evidence/local
 
----
-
-## Minute 2–4 — The physical model and the safety invariants
-
-The physics is deliberately small enough to verify by inspection. Every equation
-is in [`blackstart/core/physics/process.py`](../blackstart/core/physics/process.py)
-and documented in [ADR-002](adr/ADR-002-physical-process-model.md).
-
-Two things worth checking specifically:
-
-**Ground truth is a distinct object from the reported view.** See
-[`blackstart/core/models.py`](../blackstart/core/models.py). The controller acts
-on `ReportedState`; invariants evaluate `TruthState`; only INV-005 reads both.
-This is why a scenario that deceives the operator cannot also falsify the
-experimental record.
-
-**The safe limit sits below the physical overflow height** (4.50 m vs 5.00 m), so
-a safety excursion is an observable, recoverable state rather than an
-unrepresentable one.
-
-```bash
-uv run pytest tests/unit/test_physics.py tests/unit/test_invariants.py -q
-uv run pytest tests/property -q      # bounds that must hold across the input space
-```
-
----
-
-## Minute 4–6 — Run the baseline
-
-A range that cannot demonstrate a clean baseline cannot support a claim about
-anything else. If SCN-001 produced spurious violations, no violation anywhere
-else would be interpretable.
-
-```bash
-uv run blackstart scenario list
-uv run blackstart experiment run SCN-001 --evidence-root evidence/local
-```
-
-Expect: **C0**, zero invariant violations, 100% service availability, maximum
-tank level ≈ 3.596 m against a 4.50 m limit.
-
----
-
-## Minute 6–8 — Run the flagship comparison
-
-The same scenario, the same seed, the same configuration, differing in exactly
-one respect: whether the independent engineering constraint is present.
-
-```bash
-make demo
-# equivalently:
-uv run blackstart experiment compare SCN-004 \
-    --variant backstop-disabled --variant backstop-enabled \
+for directory in evidence/local/EXP-*; do
+  uv run blackstart experiment verify-results "$(basename "$directory")" \
     --evidence-root evidence/local
+done
 ```
 
-Measured (seed 4242, committed in [`evidence/baseline/`](../evidence/baseline/)):
+Then inspect:
 
-| Metric | Backstop disabled | Backstop enabled |
-| --- | --- | --- |
-| Maximum consequence | **C4** | **C1** |
-| Invariant violations | 2 | 1 |
-| Violated invariants | INV-001, INV-004 | INV-004 |
-| Service availability | 46.71% | 100.00% |
-| Unsafe-state duration | 639.5 s | 0.0 s |
-| Maximum tank level | 5.000 m | 3.9998 m |
-| Spill volume | 3.382 m³ | 0.000 m³ |
+- `control.csv` around 180 s: request 4.80 m in both; protected effective target
+  never exceeds 3.60 m;
+- `process.csv`: true physical trajectories;
+- `invariants.json`: per-timestep records plus explicit violation intervals;
+- `verification.json`: independent values and tolerances;
+- `manifest.json`: hashes, source fingerprint, configuration/scenario hashes,
+  environment, and code revision;
+- `experiments/local/EXP-BS-001/figures/`: plots generated from evidence.
 
-Three things to notice, because they are what distinguish a result from a demo:
+## Minute 9–10 — Challenge the claim
 
-- **INV-004 is violated in both variants.** It observes the *requested* setpoint,
-  so the evidence that an implausible command was issued survives the constraint
-  refusing it. That is a detection opportunity that does not depend on the
-  defence having failed.
-- **Service availability of 46.71%** is not a service outage — demand is met
-  throughout. It falls because the critical function CF-001 requires *both*
-  delivered service *and* no violated safety invariant.
-- **BS-01 does the work here, and BS-03 never fires.** Check it:
+Read [`docs/threat-model.md`](threat-model.md),
+[`docs/assurance-case.md`](assurance-case.md), and
+[`docs/limitations.md`](limitations.md). Ask:
 
-```bash
-uv run python -c "
-import json,glob
-for p in sorted(glob.glob('evidence/local/EXP-SCN004-*/metrics.json')):
-    m=json.load(open(p)); b=m['backstop']
-    print(m['variant'], m['maximum_consequence'], b['activation_counts'], 'trips:', b['trip_count'])
-"
-```
+1. Is only backstop state different?
+2. Does the unsafe baseline arise from transparent synthetic physics?
+3. Is the request retained in the protected evidence?
+4. Do the independent and primary metrics agree?
+5. Would compromise of EBS-001 invalidate the result? (Yes.)
+6. Is any claim generalized to a real utility? (It must not be.)
 
----
-
-## Minute 8–10 — Inspect the evidence, then try to break it
-
-Every experiment writes a self-describing directory.
-
-```bash
-ls evidence/local/EXP-SCN004-backstop-disabled-*/
-cat evidence/local/EXP-SCN004-backstop-disabled-*/summary.md
-```
-
-Verify integrity, then **independently reproduce** — re-execute from the recorded
-configuration and seed and compare every artefact byte-for-byte:
-
-```bash
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/local
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/baseline
-```
-
-Now try to break it. Edit one number in a `process.csv` and re-verify:
-
-```bash
-echo "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,C0," >> evidence/local/EXP-SCN004-backstop-enabled-*/process.csv
-uv run blackstart evidence verify --all --evidence-root evidence/local   # fails
-```
-
-Finally, see the architectural view — and its gaps:
-
-```bash
-uv run blackstart graph paths --min-class C4
-uv run blackstart graph reduction
-```
-
-40 paths reach C4 or above; 18 are interrupted by the backstop. Note that every
-`CTRL-RESERVE → VLV-001` path is **NOT INTERRUPTED**: the backstop constrains the
-pump command path and does nothing for the valve. That is a real gap in the
-current design, surfaced by the model.
-
----
-
-## What to attack if you want to find weaknesses
-
-The five questions most likely to expose a problem, and where the answers live:
-
-| Question | Where to look |
-| --- | --- |
-| Is "backstop enabled ⇒ no violations" a tautology? | `test_shares_no_code_with_the_invariant_checker`; the backstop imports nothing from `blackstart.core.invariants` |
-| Is the result a lucky seed? | `TestSeedSensitivity::test_different_seeds_change_the_detail_but_not_the_finding` — checked across four seeds |
-| Are the scenario expectations just fitted to whatever the code does? | They are, and that is the risk. [CONTRIBUTING.md](../CONTRIBUTING.md) treats updating an expectation to match a regression as the worst thing that can happen here. Judge the *thresholds* in `configs/`, which are independent of the code. |
-| Does the architecture diagram match what deploys? | `make test-architecture` parses `docker-compose.yml` and `configs/architecture.yaml` and fails on disagreement |
-| Can a scenario reach outside the process? | `tests/architecture/test_safety_boundary.py` walks the AST of `core` and `scenario_engine` |
-
----
-
-## The whole quality gate
-
-```bash
-make check      # lint + strict mypy + 377 tests + 90% branch coverage gate
-make audit      # dependency vulnerability audit
-make docs       # configuration, scenario and cross-reference validation
-```
-
-Coverage is gated at 90% branch on safety-critical modules only
-(`core`, `controller`, `scenario_engine`, `analysis`, `evidence`); currently 95%.
-Repository-wide coverage is reported but not gated, because gating it rewards
-testing trivial code and says nothing about whether the invariant logic is
-exercised.
-
----
-
-## Optional — the zoned topology
-
-Requires a running Docker daemon.
-
-```bash
-make up && make health
-open http://127.0.0.1:8080/
-make down
-```
-
-Exactly one port is published, bound to loopback. The industrial DMZ, OT and
-control networks are `internal`; no control-side port is reachable from the host.
-The dashboard you see at the enterprise edge is displaying data that traversed
-three conduits outward, and there is no command path back.
-
----
-
-## Before you conclude anything
-
-Read [limitations.md](limitations.md). BLACKSTART has **no detection
-capability**, models **effects rather than mechanisms** of compromise, and
-describes a **fictional** process with invented parameters. Its results support
-claims about the model and nothing beyond it.
+For the full gate, run `scripts/reproduce_exp_bs_001.sh`. Deliberately modify a
+copied artifact and confirm `blackstart evidence verify` rejects it.

@@ -242,6 +242,7 @@ class InvariantSpec(_Frozen):
         "temporal_lower_bound",
         "conditional",
         "rate",
+        "control_bound",
         "cross_view",
     ]
     rationale: str
@@ -254,6 +255,8 @@ class InvariantSpec(_Frozen):
     condition: str | None = None
     max_setpoint_slew_m_s: float | None = None
     max_pump_starts_per_hour: float | None = None
+    min_effective_setpoint_m: float | None = None
+    max_effective_setpoint_m: float | None = None
     max_divergence_m: float | None = None
 
 
@@ -525,6 +528,18 @@ class BlackstartConfig(_Frozen):
                 f"clamped setpoint ({clamp} m) plus deadband "
                 f"({self.process.control.deadband_m} m) reaches {reachable} m, "
                 f"at or above the INV-001 limit ({limit} m)"
+            )
+            raise ValueError(msg)
+
+        setpoint_bound = self.invariants.by_id("INV-005")
+        clamp_min = self.architecture.backstop.rule("BS-01").setpoint_min_m
+        if (
+            setpoint_bound.min_effective_setpoint_m != clamp_min
+            or setpoint_bound.max_effective_setpoint_m != clamp
+        ):
+            msg = (
+                "INV-005 effective-setpoint bounds must exactly match the BS-01 "
+                "engineering envelope; enforcement and verification cannot drift"
             )
             raise ValueError(msg)
         return self

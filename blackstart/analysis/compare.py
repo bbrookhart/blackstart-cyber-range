@@ -22,10 +22,12 @@ __all__ = ["ComparisonReport", "VariantRun", "compare_variants"]
 _COMPARED_METRICS: tuple[tuple[str, str, str], ...] = (
     ("maximum_consequence", "Maximum consequence", "lower"),
     ("invariant_violations_total", "Invariant violations", "lower"),
+    ("invariant_violation_duration_s", "Invariant violation duration (s)", "lower"),
     ("service_availability_pct", "Service availability (%)", "higher"),
     ("unsafe_state_duration_s", "Unsafe-state duration (s)", "lower"),
     ("max_tank_level_m", "Maximum tank level (m)", "lower"),
     ("max_deviation_from_setpoint_m", "Max deviation from setpoint (m)", "lower"),
+    ("minimum_safety_margin_m", "Minimum safety margin (m)", "higher"),
     ("spill_volume_m3", "Spill volume (m3)", "lower"),
     ("supervisory_availability_pct", "Supervisory availability (%)", "higher"),
 )
@@ -73,7 +75,43 @@ class ComparisonReport:
                 for run in self.runs
             ],
             "metrics": self.rows,
+            "consequence_containment": self._containment(),
             "consequence_path_reduction": self.path_reduction,
+        }
+
+    def _containment(self) -> dict[str, Any] | None:
+        """Report physical consequence reduction without hiding raw values."""
+        by_name = {run.name: run.metrics for run in self.runs}
+        before = by_name.get("backstop-disabled")
+        after = by_name.get("backstop-enabled")
+        if before is None or after is None:
+            return None
+        unsafe_before = float(before["unsafe_state_duration_s"])
+        unsafe_after = float(after["unsafe_state_duration_s"])
+        containment_pct: float | str
+        if unsafe_before > 0:
+            containment_pct = round(100.0 * (1.0 - unsafe_after / unsafe_before), 4)
+        else:
+            containment_pct = NOT_IMPLEMENTED
+        return {
+            "unsafe_state_duration_s": {
+                "backstop_off": unsafe_before,
+                "backstop_on": unsafe_after,
+                "reduction_s": round(unsafe_before - unsafe_after, 4),
+                "containment_pct": containment_pct,
+            },
+            "maximum_tank_level_m": {
+                "backstop_off": before["max_tank_level_m"],
+                "backstop_on": after["max_tank_level_m"],
+                "reduction_m": round(
+                    float(before["max_tank_level_m"]) - float(after["max_tank_level_m"]),
+                    4,
+                ),
+            },
+            "maximum_consequence": {
+                "backstop_off": before["maximum_consequence"],
+                "backstop_on": after["maximum_consequence"],
+            },
         }
 
     def render(self) -> str:
@@ -83,6 +121,7 @@ class ComparisonReport:
         label_width = max(len(row["label"]) for row in self.rows) + 2
 
         lines = [
+            "BLACKSTART EXP-BS-001 — BACKSTOP CONSEQUENCE CONTAINMENT",
             f"Scenario   {self.scenario_id} — {self.scenario_name}",
             f"Seed       {self.seed}",
             f"Question   {self.research_question}",
@@ -97,6 +136,19 @@ class ComparisonReport:
         lines.append("")
         for run in self.runs:
             lines.append(f"{run.name:<22} {run.result.experiment_id}")
+        containment = self._containment()
+        if containment is not None:
+            unsafe = containment["unsafe_state_duration_s"]
+            level = containment["maximum_tank_level_m"]
+            lines.extend(
+                [
+                    "",
+                    "DELTA",
+                    f"Unsafe-duration reduction  {unsafe['reduction_s']:.1f} s ",
+                    f"Consequence containment    {unsafe['containment_pct']}%",
+                    f"Max-level reduction         {level['reduction_m']:.4f} m",
+                ]
+            )
         return "\n".join(lines)
 
 

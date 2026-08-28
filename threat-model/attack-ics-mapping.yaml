@@ -14,7 +14,7 @@
 schema_version: 1
 authoritative_mappings: "../framework-mappings/attack-ics.yaml"
 attack_version: "v19.2"
-retrieved_or_verified: "2026-08-24"
+retrieved_or_verified: "2026-08-28"
 
 objectives:
   - id: "OBJ-001"
@@ -35,7 +35,7 @@ objectives:
     engineered_mitigation: ["BS-03"]
     measured_outcome: >-
       The independent high-level trip keeps the process safe (C4 -> C1), but
-      INV-005 is violated in BOTH variants. The constraint preserves the physical
+      INV-006 is violated in BOTH variants. The constraint preserves the physical
       mission and does NOT restore trust in telemetry.
 
   - id: "OBJ-003"

@@ -25,10 +25,9 @@ __all__ = ["NOT_IMPLEMENTED", "compute_metrics"]
 NOT_IMPLEMENTED: Final = "NOT_IMPLEMENTED"
 
 # Invariants whose violation means the critical function CF-001 is not being
-# performed. INV-004 and INV-005 are advisory: a command-rate anomaly or a
-# telemetry divergence does not by itself stop water reaching customers.
+# performed. INV-004 through INV-006 are advisory: a command anomaly, bounded
+# target violation, or telemetry divergence does not by itself stop delivery.
 _FUNCTION_CRITICAL_INVARIANTS = frozenset({"INV-001", "INV-002", "INV-003"})
-_UNSAFE_INVARIANTS = frozenset({"INV-001", "INV-003"})
 
 
 def _violated_set(row: ProcessTraceRow) -> frozenset[str]:
@@ -121,11 +120,21 @@ def compute_metrics(result: ExperimentResult, config: BlackstartConfig) -> dict[
     legitimate_setpoint_m = config.process.control.operator_setpoint_m
 
     satisfied_steps = sum(1 for row in rows if _critical_function_satisfied(row, shortfall_limit))
-    unsafe_steps = sum(1 for row in rows if _violated_set(row) & _UNSAFE_INVARIANTS)
+    maximum_safe_m = config.invariants.by_id("INV-001").limit_m
+    minimum_safe_m = config.invariants.by_id("INV-002").limit_m
+    if maximum_safe_m is None or minimum_safe_m is None:
+        msg = "INV-001 and INV-002 physical safety limits must be configured"
+        raise ValueError(msg)
+    unsafe_steps = sum(
+        1
+        for row in rows
+        if row.true_tank_level_m > maximum_safe_m or row.true_tank_level_m < minimum_safe_m
+    )
     supervisory_steps = sum(1 for row in rows if row.supervisory_available)
 
     levels = [row.true_tank_level_m for row in rows]
     shortfalls = [row.service_shortfall_ratio for row in rows]
+    safety_margins = [min(level - minimum_safe_m, maximum_safe_m - level) for level in levels]
 
     per_invariant = {
         outcome["invariant_id"]: {
@@ -160,10 +169,17 @@ def compute_metrics(result: ExperimentResult, config: BlackstartConfig) -> dict[
         "max_deviation_from_setpoint_m": round(
             max(abs(level - legitimate_setpoint_m) for level in levels), 4
         ),
+        "maximum_physical_deviation_m": round(
+            max(abs(level - legitimate_setpoint_m) for level in levels), 4
+        ),
+        "minimum_safety_margin_m": round(min(safety_margins), 4),
         "spill_volume_m3": round(rows[-1].spill_volume_m3, 4),
         # --- Invariants ---------------------------------------------------
         "invariant_violations_total": result.invariants["total_violations"],
         "violated_invariants": list(result.invariants["violated_invariants"]),
+        "invariant_violation_duration_s": round(
+            sum(item["total_violation_s"] for item in per_invariant.values()), 3
+        ),
         "invariants": per_invariant,
         # --- Consequence --------------------------------------------------
         "maximum_consequence": result.consequences.maximum_level.value,
@@ -174,6 +190,7 @@ def compute_metrics(result: ExperimentResult, config: BlackstartConfig) -> dict[
         "supervisory_availability_pct": round(100.0 * supervisory_steps / len(rows), 4),
         "pump_starts": max(0, _final_pump_starts(result)),
         "recovery": _recovery(result, rows, shortfall_limit),
+        "recovery_time_s": _recovery_value(result, rows, shortfall_limit),
         # --- Engineering control -------------------------------------------
         "backstop": {
             "enabled": result.backstop["enabled"],
@@ -197,3 +214,16 @@ def _final_pump_starts(result: ExperimentResult) -> int:
             starts = event.data.get("pump_starts", 0)
             return int(starts) if isinstance(starts, int) else 0
     return 0
+
+
+def _recovery_value(
+    result: ExperimentResult, rows: tuple[ProcessTraceRow, ...], shortfall_limit: float
+) -> float | str:
+    """Return the report-friendly recovery metric required by EXP-BS-001."""
+    recovery = _recovery(result, rows, shortfall_limit)
+    value = recovery.get("recovery_time_s")
+    if isinstance(value, (int, float)):
+        return float(value)
+    if recovery["status"] == "no_disturbance":
+        return "NOT_APPLICABLE"
+    return "NOT_RECOVERED"

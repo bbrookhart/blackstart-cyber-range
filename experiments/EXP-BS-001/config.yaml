@@ -1,0 +1,46 @@
+# Frozen flagship experiment definition. A causal-input change requires a new
+# experiment version; documentation-only changes do not.
+experiment_id: "EXP-BS-001"
+experiment_version: 1
+release: "v0.1.0"
+name: "Backstop Consequence Containment"
+scenario: "SCN-004"
+scenario_version: 1
+seed: 4242
+duration_s: 1200.0
+timestep_s: 0.5
+attack:
+  event: "unauthorized_setpoint_mutation"
+  simulator_effect: "setpoint.override"
+  t_s: 180.0
+  requested_setpoint_m: 4.80
+conditions:
+  - id: "A"
+    name: "UNPROTECTED"
+    backstop: false
+    variant: "backstop-disabled"
+  - id: "B"
+    name: "PROTECTED"
+    backstop: true
+    variant: "backstop-enabled"
+controlled_inputs:
+  - "initial physical state"
+  - "synthetic demand sequence"
+  - "random seed"
+  - "simulation timestep"
+  - "attack event and time"
+  - "requested attack setpoint"
+single_independent_variable: "engineering backstop state"
+research_question: >-
+  If an adversary is assumed capable of modifying a critical control parameter
+  after penetrating portions of the digital environment, can an independently
+  enforced engineering backstop prevent that digital compromise from producing
+  an unacceptable physical consequence?
+hypotheses:
+  h1: >-
+    An independently enforced cyber-physical backstop will significantly reduce
+    or eliminate unacceptable physical consequences caused by an unauthorized
+    control-state mutation.
+  h0: >-
+    The backstop produces no meaningful difference in physical consequence under
+    the defined experiment.

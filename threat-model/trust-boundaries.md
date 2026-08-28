@@ -168,12 +168,12 @@ It applies no constraint to outlet valve commands. Every
 One further separation is not a zone boundary but matters as much.
 
 **Ground truth is not reachable from the reported view.** Invariants evaluate
-`TruthState`; the controller and HMI act on `ReportedState`; only INV-005 reads
+`TruthState`; the controller and HMI act on `ReportedState`; only INV-006 reads
 both, and only to compare them.
 
 Consequently a scenario effect that deceives the operator **cannot** falsify the
 experimental record. In SCN-003 the HMI shows a plausible, stable, wrong level
-while INV-001 records the true excursion and INV-005 records the deception. Both
+while INV-001 records the true excursion and INV-006 records the deception. Both
 facts land in the evidence package.
 
 This is why "the process was damaged" and "the operator was deceived" are

@@ -63,7 +63,30 @@ class TestPipeline:
         assert [e["t_s"] for e in events] == sorted(e["t_s"] for e in events)
         for event in events:
             assert event["experiment_id"] == result.experiment_id
-            assert {"zone", "event_type", "severity", "asset_id", "data"} <= set(event)
+            assert {
+                "timestamp",
+                "source",
+                "zone",
+                "event_type",
+                "severity",
+                "asset_id",
+                "data",
+            } <= set(event)
+
+    def test_invariant_evaluations_are_machine_readable_per_timestep(
+        self, baseline, config: BlackstartConfig
+    ):
+        result, _, directory = baseline
+        document = json.loads((directory / "invariants.json").read_text(encoding="utf-8"))
+        evaluations = document["evaluations"]
+        assert len(evaluations) == result.step_count * len(config.invariants.invariants)
+        assert {
+            "invariant_id",
+            "timestamp",
+            "status",
+            "observed_value",
+            "threshold",
+        } <= set(evaluations[0])
 
     def test_event_stream_brackets_the_experiment(self, baseline):
         _, _, directory = baseline
@@ -184,7 +207,7 @@ class TestReproduction:
             for check in report.checks
             if check["check"].startswith("reproduces ")
         }
-        assert reproduced == set(ARTIFACT_NAMES) - {MANIFEST_NAME}
+        assert reproduced == set(ARTIFACT_NAMES) - {MANIFEST_NAME, "environment.json"}
 
     def test_manifest_provenance_is_excluded_from_the_hash(self, baseline):
         """Wall-clock provenance must not break byte-level reproducibility."""

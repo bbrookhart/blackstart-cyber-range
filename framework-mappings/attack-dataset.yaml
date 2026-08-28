@@ -1,0 +1,13 @@
+framework: "MITRE ATT&CK"
+domain: "ICS"
+version: "19.2"
+retrieved_at: "2026-08-28"
+source: "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/v19.2/ics-attack/ics-attack-19.2.json"
+release: "https://github.com/mitre-attack/attack-stix-data/releases/tag/v19.2"
+dataset_hash: "sha256:08b83d2cea6b6d6752468ef0e62e2ab2a53c9443ef72c439ecccb07ab9e89da9"
+dataset_bytes: 4057891
+scope_note: >-
+  This pin identifies the official ATT&CK for ICS STIX dataset used to verify
+  BLACKSTART mappings. The dataset is not vendored. Mappings describe only
+  effects represented by scenarios and do not claim technique detection,
+  prevention, compliance, or complete ATT&CK coverage.

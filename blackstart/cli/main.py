@@ -20,6 +20,7 @@ from typing import Any
 from blackstart import __version__
 from blackstart.analysis.compare import VariantRun, compare_variants
 from blackstart.analysis.metrics import compute_metrics
+from blackstart.analysis.verification import verify_results
 from blackstart.core.config import BlackstartConfig, load_config
 from blackstart.core.graph.build import build_graph, load_asset_model
 from blackstart.core.graph.queries import (
@@ -28,8 +29,10 @@ from blackstart.core.graph.queries import (
     path_reduction,
     supporting_assets,
 )
+from blackstart.core.graph.scenario import scenario_consequence_graph
 from blackstart.evidence.package import write_evidence
 from blackstart.evidence.verify import reproduce_experiment, verify_evidence
+from blackstart.experiment.flagship import run_flagship
 from blackstart.scenario_engine.loader import list_scenarios, load_scenario
 from blackstart.scenario_engine.orchestration import (
     ExperimentResult,
@@ -72,6 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory holding process/invariants/consequences/architecture YAML.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
+    subcommands.add_parser("status", help="Show implemented v0.1 research capabilities.")
 
     # --- scenario ----------------------------------------------------------
     scenario = subcommands.add_parser("scenario", help="Inspect the scenario catalogue.")
@@ -88,8 +92,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("scenario_id", help="Scenario identifier, e.g. SCN-001.")
     run.add_argument(
         "--variant",
-        default="backstop-enabled",
+        default=None,
         help="Experiment variant (default: backstop-enabled).",
+    )
+    run.add_argument(
+        "--backstop",
+        choices=("on", "off"),
+        default=None,
+        help="Reviewer-friendly alias for --variant backstop-enabled/disabled.",
     )
     run.add_argument("--seed", type=int, default=None, help="Override the scenario seed.")
     run.add_argument(
@@ -112,11 +122,68 @@ def build_parser() -> argparse.ArgumentParser:
             "Variant to include; repeat for each. Default: backstop-disabled and backstop-enabled."
         ),
     )
+    compare.add_argument(
+        "--backstop",
+        action="append",
+        dest="backstops",
+        choices=("on", "off"),
+        default=None,
+        help="Backstop conditions to compare; repeat for both off and on.",
+    )
     compare.add_argument("--seed", type=int, default=None, help="Override the scenario seed.")
     compare.add_argument(
         "--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT, help="Evidence output root."
     )
     compare.add_argument("--json", action="store_true", help="Emit the comparison as JSON.")
+
+    flagship = experiment_sub.add_parser(
+        "flagship", help="Run, verify, compare, plot, and report EXP-BS-001."
+    )
+    flagship.add_argument(
+        "--evidence-root",
+        type=Path,
+        default=Path("evidence/local"),
+        help="Evidence output root.",
+    )
+    flagship.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("experiments/local/EXP-BS-001"),
+        help="Comparison/report/figure output directory.",
+    )
+    flagship.add_argument(
+        "--assets-dir",
+        type=Path,
+        default=None,
+        help="Optional directory to receive generated publication figures.",
+    )
+    flagship.add_argument(
+        "--technical-report",
+        type=Path,
+        default=None,
+        help="Optional path for a generated technical-report copy.",
+    )
+    flagship.add_argument(
+        "--readme",
+        type=Path,
+        default=None,
+        help="Optional README whose generated EXP-BS-001 result card is refreshed.",
+    )
+    flagship.add_argument(
+        "--review-dir",
+        type=Path,
+        default=None,
+        help="Optional external-review directory to receive figures and results CSV.",
+    )
+
+    verify_results_parser = experiment_sub.add_parser(
+        "verify-results", help="Independently recalculate key metrics from process.csv."
+    )
+    verify_results_parser.add_argument("experiment_id", help="Experiment identifier.")
+    verify_results_parser.add_argument(
+        "--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT, help="Evidence root."
+    )
+    verify_results_parser.add_argument("--json", action="store_true", help="Emit JSON.")
 
     # --- evidence ----------------------------------------------------------
     evidence = subcommands.add_parser("evidence", help="Verify evidence packages.")
@@ -160,6 +227,12 @@ def build_parser() -> argparse.ArgumentParser:
         "reduction", help="Consequence-path reduction from the engineering backstop."
     )
     reduction.add_argument("--min-class", default="C4")
+
+    consequence_path = graph_sub.add_parser(
+        "consequence-path", help="Show the scenario-to-mission consequence path."
+    )
+    consequence_path.add_argument("scenario_id", help="Scenario identifier, e.g. SCN-004.")
+    consequence_path.add_argument("--json", action="store_true", help="Emit as JSON.")
 
     # --- config ------------------------------------------------------------
     config_cmd = subcommands.add_parser("config", help="Validate configuration.")
@@ -235,8 +308,16 @@ def _cmd_scenario_show(args: argparse.Namespace) -> int:
 
 def _cmd_experiment_run(args: argparse.Namespace, config: BlackstartConfig) -> int:
     """Run one experiment and report its headline metrics."""
+    variant = args.variant
+    if args.backstop is not None:
+        alias = "backstop-enabled" if args.backstop == "on" else "backstop-disabled"
+        if variant is not None and variant != alias:
+            raise ValueError("--variant and --backstop select conflicting conditions")
+        variant = alias
+    if variant is None:
+        variant = "backstop-enabled"
     result, metrics, directory = _run_one(
-        config, args.scenario_id, args.variant, args.seed, args.evidence_root
+        config, args.scenario_id, variant, args.seed, args.evidence_root
     )
     print(f"Experiment  {result.experiment_id}")
     print(f"Scenario    {result.scenario.id} — {result.scenario.name}")
@@ -258,7 +339,16 @@ def _cmd_experiment_run(args: argparse.Namespace, config: BlackstartConfig) -> i
 
 def _cmd_experiment_compare(args: argparse.Namespace, config: BlackstartConfig) -> int:
     """Run several variants of one scenario and compare them."""
-    variant_names = args.variants or ["backstop-disabled", "backstop-enabled"]
+    variant_names = args.variants
+    if args.backstops:
+        aliases = [
+            "backstop-enabled" if state == "on" else "backstop-disabled" for state in args.backstops
+        ]
+        if variant_names is not None and variant_names != aliases:
+            raise ValueError("--variant and --backstop select conflicting comparisons")
+        variant_names = aliases
+    if variant_names is None:
+        variant_names = ["backstop-disabled", "backstop-enabled"]
     runs = []
     for name in variant_names:
         result, metrics, directory = _run_one(
@@ -286,6 +376,73 @@ def _cmd_experiment_compare(args: argparse.Namespace, config: BlackstartConfig) 
         )
         print(f"  {reduction['interpretation']}")
     return _EXIT_OK
+
+
+def _cmd_experiment_flagship(args: argparse.Namespace, config: BlackstartConfig) -> int:
+    """Run the controlled flagship comparison and all verification paths."""
+    release = run_flagship(
+        config,
+        evidence_root=args.evidence_root,
+        output_directory=args.output_dir,
+        assets_directory=args.assets_dir,
+        technical_report_path=args.technical_report,
+        readme_path=args.readme,
+        review_directory=args.review_dir,
+    )
+    off, on = release.runs
+    print("BLACKSTART EXP-BS-001 — BACKSTOP CONSEQUENCE CONTAINMENT")
+    print(f"Scenario                  {off.result.scenario.id} — {off.result.scenario.name}")
+    print("")
+    print("UNPROTECTED")
+    print(f"Experiment                {off.result.experiment_id}")
+    print(f"Max level                 {off.metrics['max_tank_level_m']:.4f} m")
+    print(f"Unsafe-state duration     {off.metrics['unsafe_state_duration_s']:.1f} s")
+    print(f"Invariant violations      {off.metrics['invariant_violations_total']}")
+    print(f"Max consequence           {off.metrics['maximum_consequence']}")
+    print("")
+    print("PROTECTED")
+    print(f"Experiment                {on.result.experiment_id}")
+    print(f"Max level                 {on.metrics['max_tank_level_m']:.4f} m")
+    print(f"Unsafe-state duration     {on.metrics['unsafe_state_duration_s']:.1f} s")
+    print(f"Invariant violations      {on.metrics['invariant_violations_total']}")
+    print(f"Max consequence           {on.metrics['maximum_consequence']}")
+    containment = release.comparison["consequence_containment"]
+    print("")
+    print("DELTA")
+    print(
+        f"Unsafe-duration reduction {containment['unsafe_state_duration_s']['reduction_s']:.1f} s"
+    )
+    print(
+        "Consequence containment    "
+        f"{containment['unsafe_state_duration_s']['containment_pct']:.1f}%"
+    )
+    print("")
+    print(f"Evidence OFF              {release.unprotected_directory}")
+    print(f"Evidence ON               {release.protected_directory}")
+    print(f"Report                    {release.report_path}")
+    return _EXIT_OK
+
+
+def _cmd_experiment_verify_results(args: argparse.Namespace) -> int:
+    """Run the independent CSV-based metric calculation."""
+    candidates = sorted(args.evidence_root.glob(f"**/{args.experiment_id}"))
+    if not candidates:
+        print(
+            f"No evidence package '{args.experiment_id}' under {args.evidence_root}",
+            file=sys.stderr,
+        )
+        return _EXIT_FAILURE
+    report = verify_results(candidates[0])
+    if args.json:
+        print(json.dumps(report.as_dict(), indent=2, sort_keys=True))
+    else:
+        print(f"[{'PASS' if report.passed else 'FAIL'}] {report.experiment_id}")
+        for check in report.checks:
+            print(
+                f"  {check['metric']:<30} primary={check['primary']} "
+                f"independent={check['independent']}"
+            )
+    return _EXIT_OK if report.passed else _EXIT_FAILURE
 
 
 def _cmd_evidence_verify(args: argparse.Namespace) -> int:
@@ -363,6 +520,33 @@ def _cmd_graph(args: argparse.Namespace, config: BlackstartConfig) -> int:
         case "reduction":
             reduction = path_reduction(cgraph, minimum_class=args.min_class).as_dict()
             print(json.dumps(reduction, indent=2))
+        case "consequence-path":
+            scenario = load_scenario(args.scenario_id)
+            payload = scenario_consequence_graph(scenario)
+            if args.json:
+                print(json.dumps(payload, indent=2, sort_keys=True))
+            elif args.scenario_id == "SCN-004":
+                print(" -> ".join(payload["unprotected_path"]))
+                interruption = payload["protected_interruption"]
+                print(
+                    f"Protected: {interruption['control']} / {interruption['rule']} — "
+                    f"{interruption['result']}"
+                )
+            else:
+                print(payload["claim"])
+    return _EXIT_OK
+
+
+def _cmd_status(config: BlackstartConfig) -> int:
+    """Print the factual v0.1 implementation status."""
+    print("BLACKSTART v0.1 — research prototype")
+    print(f"Process             {config.process.process_id} municipal water storage")
+    print(f"Timestep            {config.process.simulation.timestep_s:.1f} s")
+    print(f"Safety invariants   {len(config.invariants.invariants)} implemented")
+    print("Flagship            EXP-BS-001 / SCN-004")
+    print("Simulation mode     IMPLEMENTED")
+    print("Hardware-in-loop    NOT_IMPLEMENTED")
+    print("SCEPTRE             FUTURE_WORK")
     return _EXIT_OK
 
 
@@ -409,10 +593,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         config = load_config(args.config_dir)
 
+        if args.command == "status":
+            return _cmd_status(config)
+
         if args.command == "experiment":
             if args.experiment_command == "run":
                 return _cmd_experiment_run(args, config)
-            return _cmd_experiment_compare(args, config)
+            if args.experiment_command == "compare":
+                return _cmd_experiment_compare(args, config)
+            if args.experiment_command == "flagship":
+                return _cmd_experiment_flagship(args, config)
+            return _cmd_experiment_verify_results(args)
 
         if args.command == "graph":
             return _cmd_graph(args, config)
@@ -420,7 +611,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "config":
             return _cmd_config_validate(config, args.config_dir)
 
-    except (FileNotFoundError, ValueError, KeyError) as exc:
+    except (FileNotFoundError, FileExistsError, ValueError, KeyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return _EXIT_USAGE
 

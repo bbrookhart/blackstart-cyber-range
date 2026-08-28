@@ -98,6 +98,6 @@ guarantee.
 
 ## Security implications
 
-Evidence integrity is an explicit asset in the threat model. INV-005 plus truth/reported
+Evidence integrity is an explicit asset in the threat model. INV-006 plus truth/reported
 separation (ADR-004) means the evidence record remains correct even when the operator view has
 been falsified.

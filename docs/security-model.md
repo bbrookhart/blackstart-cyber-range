@@ -144,7 +144,7 @@ Ground truth is not reachable from the reported view. A scenario effect that
 deceives the operator **cannot** falsify the experimental record.
 
 In SCN-003 the HMI displays a plausible, stable, wrong level while INV-001 records
-the true excursion and INV-005 records the deception. Both land in the evidence
+the true excursion and INV-006 records the deception. Both land in the evidence
 package, and the metrics report them separately.
 
 ---

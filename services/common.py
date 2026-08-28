@@ -78,7 +78,11 @@ class UpstreamPoller:
 
     async def _loop(self) -> None:
         """Poll the upstream endpoint until cancelled."""
-        async with httpx.AsyncClient() as client:
+        # These are fixed, internal service-to-service conduits. Inheriting
+        # HTTP(S)_PROXY from an operator shell would silently route OT-side
+        # traffic outside the declared topology and makes clean-room tests
+        # environment-dependent.
+        async with httpx.AsyncClient(trust_env=False) as client:
             while True:
                 await self.poll_once(client)
                 await asyncio.sleep(self.interval_s)

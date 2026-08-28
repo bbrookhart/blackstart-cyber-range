@@ -20,6 +20,7 @@ dependencies = [
   "pydantic>=2.9,<3",
   "pyyaml>=6.0,<7",
   "networkx>=3.3,<4",
+  "matplotlib>=3.10,<4",
 ]
 
 [project.optional-dependencies]
@@ -94,6 +95,8 @@ ignore = [
 # every seeded simulation RNG, which is exactly what these tests must use.
 "tests/**" = ["D", "S101", "S311", "ANN"]
 "services/**" = ["D104"]
+"blackstart/analysis/plots.py" = ["E501"]
+"blackstart/experiment/flagship.py" = ["E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

@@ -81,7 +81,7 @@ false-positive rate all carry that marker.
 
 The project deliberately retains results that complicate its own argument:
 
-- In SCN-003 the engineering constraint keeps the process safe while INV-005
+- In SCN-003 the engineering constraint keeps the process safe while INV-006
   remains violated in **both** variants. The defence preserves the physical
   mission and does nothing for the operator's understanding of it.
 - In SCN-006 the dry-run interlock prevents equipment damage but does not prevent

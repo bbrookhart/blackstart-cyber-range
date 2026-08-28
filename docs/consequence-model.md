@@ -32,8 +32,8 @@ meeting demand throughout.
 ## Safety invariants
 
 Invariants are the **ground-truth record** of whether the process was actually
-safe. They evaluate `TruthState`, not what the control system believed — with one
-deliberate exception.
+safe. Physical invariants evaluate `TruthState`, while control and cross-view
+invariants evaluate the exact fields named in configuration.
 
 | ID | Property | Limit | Tolerance | Maps to |
 | --- | --- | --- | --- | --- |
@@ -41,7 +41,8 @@ deliberate exception.
 | INV-002 | Level ≥ operational reserve | 1.00 m | 120 s | C3 |
 | INV-003 | Pump not energised without suction | 0.50 m source | 10 s | C4 |
 | INV-004 | Command rate physically achievable | 0.05 m/s, 12 starts/h | none | C1 |
-| INV-005 | Reported level tracks true level | 0.10 m | 5 s | C1 |
+| INV-005 | Effective setpoint remains in engineering range | 1.50–3.60 m | none | C1 |
+| INV-006 | Reported level tracks true level | 0.10 m | 5 s | C1 |
 
 Three design points that matter:
 
@@ -56,10 +57,10 @@ leading indicator — within a configured margin of the limit — and it is what
 BLACKSTART measure how much *warning* an engineered control bought, not merely
 whether a limit was crossed.
 
-**INV-005 is the only invariant that reads both views**, because comparing them is
+**INV-006 is the only invariant that reads both views**, because comparing them is
 its entire purpose. Consequently a scenario effect that deceives the operator
 cannot also falsify the experimental record: in SCN-003 the HMI shows a plausible
-wrong value while INV-001 records the true excursion and INV-005 records the
+wrong value while INV-001 records the true excursion and INV-006 records the
 deception.
 
 ---
@@ -73,7 +74,7 @@ makes a reported "maximum consequence C4" a result rather than a label.
 | Class | Name | Reached when |
 | --- | --- | --- |
 | **C0** | Normal operation | In band, shortfall < 2%, no violated invariant |
-| **C1** | Minor operational deviation | Outside the normal band, or shortfall ≥ 2%, or INV-004/INV-005 violated |
+| **C1** | Minor operational deviation | Outside the normal band, shortfall ≥ 2%, or INV-004/005/006 violated |
 | **C2** | Service degradation | Shortfall ≥ 10% sustained ≥ 60 s |
 | **C3** | Loss of required service | Shortfall ≥ 50% sustained ≥ 60 s, or INV-002 violated |
 | **C4** | Unsafe physical state | INV-001 or INV-003 violated |
@@ -141,7 +142,7 @@ Defined in [`blackstart/analysis/metrics.py`](../blackstart/analysis/metrics.py)
 | Metric | Definition |
 | --- | --- |
 | Service availability | % of steps where CF-001 is satisfied |
-| Unsafe-state duration | Time with INV-001 or INV-003 violated |
+| Unsafe-state duration | Time true level is above 4.50 m or below 1.00 m |
 | Maximum physical deviation | Peak \|level − *legitimate* setpoint\| |
 | Invariant violations | Count, duration and peak excursion, per invariant |
 | Consequence severity | Maximum class reached, plus dwell time per class |

@@ -10,7 +10,7 @@ formats may change between minor versions.
 
 ---
 
-## [0.1.0] — 2026-08-24
+## [0.1.0] — 2026-08-28
 
 First operational research release.
 
@@ -26,8 +26,8 @@ First operational research release.
   reserve-protection outlet throttle, executing on a 1.0 s PLC scan.
 
 **Safety and consequence**
-- Five safety invariants (INV-001 … INV-005) implemented as stateful temporal
-  predicates with three-valued status, evaluated against ground truth.
+- Six safety invariants (INV-001 … INV-006), including the central effective
+  setpoint bound, with machine-readable per-timestep evaluations.
 - Six-class consequence taxonomy (C0 … C5) derived from measurable conditions,
   never assigned.
 - Critical function CF-001 with an explicit satisfaction predicate.
@@ -46,7 +46,9 @@ First operational research release.
   depletion with dry-run exposure.
 
 **Evidence and analysis**
-- Self-describing evidence packages with SHA-256 artefact digests.
+- Self-describing evidence packages with SHA-256 artifact digests, schemas,
+  environment provenance, control traces, causal graph, and independent result
+  verification.
 - Deterministic experiment identifiers derived from version, configuration and
   seed; byte-for-byte reproduction verified by `evidence verify --reproduce`.
 - Research metrics including service availability, unsafe-state duration,
@@ -60,16 +62,17 @@ First operational research release.
   influence, high-consequence paths and engineering-control path reduction.
 
 **Quality**
-- 377 tests across unit, property-based, integration and architecture suites.
-- 95% branch coverage on safety-critical modules against a 90% gate.
+- 385 tests across unit, property-based, integration and architecture suites.
+- 94.09% branch coverage on selected safety-critical modules against a 90% gate.
 - Strict `mypy` across package, services and tests.
 - ADR-001 through ADR-006.
 
 ### Measured
 
 The flagship comparison (SCN-004, seed 4242) is recorded in
-[`evidence/baseline/`](evidence/baseline/) and reproduced in CI. Figures appear
-in the README and in each experiment's `summary.md`.
+[`experiments/releases/v0.1.0/`](experiments/releases/v0.1.0/) and regenerated in
+CI. The unprotected condition reaches C4 with 639.5 s unsafe; the protected
+condition reaches C1 with 0.0 s unsafe.
 
 ### Known limitations
 

@@ -1,8 +1,9 @@
 """Integration tests for the determinism contract (ADR-005).
 
-An experiment is a pure function of ``(version, configuration, seed)``. If that
-stops being true, every published result silently becomes unverifiable, so it is
-tested directly rather than assumed.
+Scientific artifacts are a pure function of simulator version, source
+fingerprint, configuration, scenario, and seed. Environment and manifest
+provenance additionally record wall-clock and git state, so they are validated
+but deliberately excluded from byte-equivalence claims.
 """
 
 from __future__ import annotations
@@ -59,10 +60,26 @@ class TestRepeatability:
                 {
                     path.name: path.read_bytes()
                     for path in sorted(directory.iterdir())
-                    if path.name != "manifest.json"
+                    if path.name not in {"manifest.json", "environment.json"}
                 }
             )
         assert digests[0] == digests[1]
+
+    def test_environment_provenance_is_explicit(self, config: BlackstartConfig, scenario, tmp_path):
+        variant = resolve_variant("backstop-enabled")
+        result = ExperimentRunner(config, scenario, variant).run()
+        metrics = compute_metrics(result, config)
+        directory = write_evidence(result, config, metrics, tmp_path)
+        environment = (directory / "environment.json").read_text(encoding="utf-8")
+        for field in (
+            "started_at",
+            "git_commit",
+            "source_fingerprint",
+            "python_version",
+            "architecture",
+            "configuration_hash",
+        ):
+            assert f'"{field}"' in environment
 
 
 class TestExperimentIdentity:

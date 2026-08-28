@@ -33,7 +33,7 @@ __all__ = ["ConsequenceClassifier", "ConsequenceSample", "ConsequenceSummary"]
 _UNSAFE_PHYSICAL_INVARIANTS = frozenset({"INV-001", "INV-003"})
 # Invariants whose violation is operationally noteworthy but not a physical
 # consequence in itself (C1).
-_ADVISORY_INVARIANTS = frozenset({"INV-004", "INV-005"})
+_ADVISORY_INVARIANTS = frozenset({"INV-004", "INV-005", "INV-006"})
 # Invariant whose violation is by definition a loss of the required service (C3).
 _SERVICE_LOSS_INVARIANTS = frozenset({"INV-002"})
 

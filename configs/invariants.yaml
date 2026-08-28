@@ -2,7 +2,7 @@
 #
 # Invariants are the ground-truth record of whether the simulated process was
 # actually safe. They evaluate TRUE physical state, not reported telemetry --
-# with the single, deliberate exception of INV-005, whose purpose is to compare
+# with the single, deliberate exception of INV-006, whose purpose is to compare
 # the two. See ADR-004.
 #
 # Invariants are an analysis instrument. They are NOT a control element and are
@@ -74,6 +74,20 @@ invariants:
     severity_on_violation: "C1"
 
   - id: "INV-005"
+    name: "Effective control setpoint bound"
+    kind: "control_bound"
+    rationale: >-
+      A supervisory request outside the engineered control envelope must not
+      become the controller's effective target while the independent backstop is
+      active. The requested value remains visible for attribution-independent
+      detection, while the effective value is constrained before control action.
+    observes: ["command.requested_setpoint_m", "command.effective_setpoint_m"]
+    min_effective_setpoint_m: 1.50
+    max_effective_setpoint_m: 3.60
+    tolerance_s: 0.0
+    severity_on_violation: "C1"
+
+  - id: "INV-006"
     name: "Telemetry integrity awareness"
     kind: "cross_view"
     rationale: >-

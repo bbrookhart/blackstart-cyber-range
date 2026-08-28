@@ -99,7 +99,7 @@ def create_app(controller_url: str | None = None) -> FastAPI:
     async def set_setpoint(request: SetpointRequest) -> dict[str, Any]:
         """Forward an operator setpoint change to the controller over CDT-004."""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(trust_env=False) as client:
                 response = await client.post(
                     f"{base}/setpoint",
                     json={"setpoint_m": request.setpoint_m, "origin": "hmi-operator"},

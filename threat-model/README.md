@@ -34,7 +34,7 @@ bounds* — the unacceptable outcomes are:
 | Operational reserve lost beyond tolerance | C3 | INV-002 |
 | Sustained failure to deliver demanded flow | C2 / C3 | Service shortfall |
 | Loss of containment at scale | C5 | Spill volume |
-| Operator's understanding of the process falsified | C1 | INV-005 |
+| Operator's understanding of the process falsified | C1 | INV-006 |
 
 The last one is not a physical consequence, and BLACKSTART deliberately does not
 inflate it into one. It is tracked separately because a defence can preserve the
@@ -130,7 +130,7 @@ disappear, and listed as a roadmap item. It is not presented as a solved problem
 ### 4.3 Preserving the process does not preserve the operator's view
 
 In SCN-003 the backstop keeps the tank below its safe limit under a falsified
-level transmitter — INV-001 is never violated. INV-005 is violated throughout,
+level transmitter — INV-001 is never violated. INV-006 is violated throughout,
 in **both** variants.
 
 The engineering control defends the physical mission. It does nothing for

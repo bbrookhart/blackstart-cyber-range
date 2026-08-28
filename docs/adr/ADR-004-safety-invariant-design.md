@@ -22,11 +22,11 @@ Three questions had to be settled:
 Invariants are the *ground-truth* record of whether the process was actually safe. They are an
 analysis instrument, not a control element, and they read `ProcessState.truth`.
 
-The single exception is **INV-005 (telemetry integrity)**, whose entire purpose is to compare
+The single exception is **INV-006 (telemetry integrity)**, whose entire purpose is to compare
 the two views. It reads both, and is the only invariant permitted to do so.
 
 The consequence: if an adversary falsifies the level transmitter, the operator-facing view is
-wrong, INV-001 still reports the true excursion, and INV-005 reports the deception. Both facts
+wrong, INV-001 still reports the true excursion, and INV-006 reports the deception. Both facts
 land in the evidence package. **The evidence model is not deceivable by an effect that
 deceives the operator** — this is a deliberate and load-bearing property.
 
@@ -62,15 +62,16 @@ backstop's thresholds are deliberately set *tighter* than the invariant limits (
 4.50 m) so the backstop acts before the safety limit, and the margin between them is itself a
 measurable quantity.
 
-### The five invariants
+### The six invariants
 
 | ID | Property | Type |
 | --- | --- | --- |
 | INV-001 | Tank level ≤ 4.50 m | Instantaneous bound |
 | INV-002 | Level ≥ 1.00 m reserve, tolerance 120 s | Temporal |
 | INV-003 | Pump not energised while source below suction limit | Conditional |
-| INV-004 | Commanded setpoint slew ≤ 0.05 m/s; pump starts ≤ 6/hour | Rate |
-| INV-005 | \|reported level − true level\| ≤ 0.10 m | Cross-view |
+| INV-004 | Commanded setpoint slew ≤ 0.05 m/s; pump starts ≤ 12/hour | Rate |
+| INV-005 | Effective setpoint remains in 1.50–3.60 m engineering range | Control bound |
+| INV-006 | \|reported level − true level\| ≤ 0.10 m | Cross-view |
 
 Every invariant is defined in `configs/invariants.yaml`, implemented in
 `blackstart/core/invariants/`, and covered by dedicated unit tests plus at least one property
@@ -99,5 +100,5 @@ analysis, not a HAZOP, and not a safety case. `docs/limitations.md` says so expl
 
 ## Security implications
 
-INV-005 makes loss of telemetry integrity a first-class, measured condition rather than an
+INV-006 makes loss of telemetry integrity a first-class, measured condition rather than an
 untracked assumption, and is the property SCN-003 is built to exercise.

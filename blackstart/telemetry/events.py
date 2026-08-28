@@ -82,6 +82,7 @@ class Event:
     def as_dict(self) -> dict[str, Any]:
         """Serialise to the JSON shape written to ``events.jsonl``."""
         return {
+            "timestamp": round(self.t_s, 3),
             "t_s": round(self.t_s, 3),
             "experiment_id": self.experiment_id,
             "source": self.source,

@@ -20,6 +20,7 @@ __all__ = [
     "DryRunInvariant",
     "MaximumLevelInvariant",
     "MinimumReserveInvariant",
+    "SetpointBoundInvariant",
     "TelemetryIntegrityInvariant",
 ]
 
@@ -195,8 +196,54 @@ class CommandRateInvariant(Invariant):
         )
 
 
+class SetpointBoundInvariant(Invariant):
+    """INV-005 — the effective control target must remain physically acceptable.
+
+    Unlike INV-004, which preserves evidence of the adversary's requested
+    mutation, this invariant observes the value that actually reaches the
+    controller. It is therefore the executable form of the flagship assurance
+    property: with the backstop active, an unsafe request may still exist in
+    evidence but cannot become an unsafe effective target.
+    """
+
+    def __init__(self, spec: InvariantSpec) -> None:
+        """Bind the configured minimum and maximum effective setpoints."""
+        super().__init__(spec)
+        self._minimum_m = _require(
+            spec.min_effective_setpoint_m, spec.id, "min_effective_setpoint_m"
+        )
+        self._maximum_m = _require(
+            spec.max_effective_setpoint_m, spec.id, "max_effective_setpoint_m"
+        )
+        if self._minimum_m >= self._maximum_m:
+            msg = f"{spec.id} requires min_effective_setpoint_m < max_effective_setpoint_m"
+            raise ValueError(msg)
+
+    @property
+    def limit(self) -> float | None:
+        """Upper engineering limit, used for evidence display."""
+        return self._maximum_m
+
+    def observe(self, state: ProcessState, dt_s: float) -> Observation:
+        """Observe the effective target after any independent constraint."""
+        del dt_s
+        effective = state.command.effective_setpoint_m
+        below = effective < self._minimum_m
+        above = effective > self._maximum_m
+        return Observation(
+            value=effective,
+            breaching=below or above,
+            detail={
+                "requested_setpoint_m": state.command.requested_setpoint_m,
+                "effective_setpoint_m": effective,
+                "minimum_m": self._minimum_m,
+                "maximum_m": self._maximum_m,
+            },
+        )
+
+
 class TelemetryIntegrityInvariant(Invariant):
-    """INV-005 — reported process state must track true process state.
+    """INV-006 — reported process state must track true process state.
 
     The only invariant permitted to read both views. It makes loss of telemetry
     integrity a measured condition rather than an untracked assumption, and it

@@ -40,6 +40,7 @@ class ProcessTraceRow:
     spill_volume_m3: float
     pump_energised: int
     pump_permitted: int
+    pump_command: int
     valve_position: float
     requested_setpoint_m: float
     effective_setpoint_m: float
@@ -86,7 +87,9 @@ def write_process_csv(rows: Iterable[ProcessTraceRow], path: Path) -> int:
     """Write process trace rows to a CSV file with stable float formatting."""
     written = 0
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=ProcessTraceRow.field_names())
+        writer = csv.DictWriter(
+            handle, fieldnames=ProcessTraceRow.field_names(), lineterminator="\n"
+        )
         writer.writeheader()
         for row in rows:
             record = asdict(row)

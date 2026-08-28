@@ -59,7 +59,7 @@ consequences:
         - metric: "service_shortfall_ratio"
           at_least: 0.02
         - metric: "violated_invariants"
-          includes_any: ["INV-004", "INV-005"]
+          includes_any: ["INV-004", "INV-005", "INV-006"]
 
   - level: "C2"
     name: "Service degradation"

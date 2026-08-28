@@ -24,15 +24,20 @@ a motivated forger, and ADR-005 says so rather than implying otherwise.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import platform
+import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from blackstart.analysis.verification import verify_results
 from blackstart.core.config import BlackstartConfig, canonical_json
+from blackstart.core.graph.scenario import scenario_consequence_graph
 from blackstart.scenario_engine.orchestration import ExperimentResult
 from blackstart.telemetry.exporters.csv_exporter import write_process_csv
 from blackstart.telemetry.exporters.jsonl import write_events_jsonl
@@ -45,11 +50,16 @@ MANIFEST_NAME = "manifest.json"
 #: Verification fails on a missing file *or* an unexpected extra one.
 ARTIFACT_NAMES: tuple[str, ...] = (
     "configuration.json",
+    "environment.json",
+    "scenario.json",
     "events.jsonl",
     "process.csv",
+    "control.csv",
     "invariants.json",
     "consequences.json",
     "metrics.json",
+    "graph.json",
+    "verification.json",
     "summary.md",
 )
 
@@ -74,6 +84,63 @@ def _write_json(path: Path, payload: Any) -> None:
     path.write_text(canonical_json(payload) + "\n", encoding="utf-8")
 
 
+def _git_commit() -> str:
+    """Return the checked-out commit, or an explicit unavailable marker."""
+    executable = shutil.which("git")
+    if executable is None:
+        return "UNAVAILABLE"
+    try:
+        completed = subprocess.run(  # noqa: S603 - fixed git binary and constant arguments
+            [executable, "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return "UNAVAILABLE"
+    return completed.stdout.strip() or "UNAVAILABLE"
+
+
+def _write_control_csv(result: ExperimentResult, path: Path) -> None:
+    """Write the supervisory request/backstop/actuation trace."""
+    fields = (
+        "experiment_id",
+        "t_s",
+        "requested_setpoint_m",
+        "effective_setpoint_m",
+        "backstop_decision",
+        "pump_command",
+        "pump_permitted",
+        "pump_energised",
+        "valve_position",
+        "true_tank_level_m",
+    )
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for row in result.trace.rows:
+            decision = "PASS"
+            if row.requested_setpoint_m != row.effective_setpoint_m:
+                decision = "CONSTRAIN"
+            elif row.pump_command and not row.pump_permitted:
+                decision = "DENY"
+            writer.writerow(
+                {
+                    "experiment_id": result.experiment_id,
+                    "t_s": f"{row.t_s:.6f}",
+                    "requested_setpoint_m": f"{row.requested_setpoint_m:.6f}",
+                    "effective_setpoint_m": f"{row.effective_setpoint_m:.6f}",
+                    "backstop_decision": decision,
+                    "pump_command": row.pump_command,
+                    "pump_permitted": row.pump_permitted,
+                    "pump_energised": row.pump_energised,
+                    "valve_position": f"{row.valve_position:.6f}",
+                    "true_tank_level_m": f"{row.true_tank_level_m:.6f}",
+                }
+            )
+
+
 def write_evidence(
     result: ExperimentResult,
     config: BlackstartConfig,
@@ -92,13 +159,22 @@ def write_evidence(
         Path to the experiment's evidence directory.
     """
     directory = evidence_root / result.experiment_id
+    if directory.exists() and any(directory.iterdir()):
+        msg = (
+            f"evidence package already exists: {directory}; "
+            "BLACKSTART will not overwrite prior evidence silently"
+        )
+        raise FileExistsError(msg)
     directory.mkdir(parents=True, exist_ok=True)
+
+    generated_at = datetime.now(UTC).isoformat(timespec="seconds")
+    git_commit = _git_commit()
 
     _write_json(
         directory / "configuration.json",
         {
+            "experiment_id": result.experiment_id,
             "config": config.model_dump(mode="json"),
-            "scenario": result.scenario.model_dump(mode="json"),
             "variant": {
                 "name": result.variant.name,
                 "backstop_enabled": result.variant.backstop_enabled,
@@ -108,17 +184,58 @@ def write_evidence(
             "configuration_hash": result.configuration_hash,
         },
     )
+    _write_json(
+        directory / "environment.json",
+        {
+            "experiment_id": result.experiment_id,
+            "blackstart_version": result.blackstart_version,
+            "git_commit": git_commit,
+            "source_fingerprint": result.source_fingerprint,
+            "python_version": sys.version.split()[0],
+            "os": platform.system(),
+            "os_release": platform.release(),
+            "architecture": platform.machine(),
+            "container_images": ["python:3.12-slim"],
+            "seed": result.seed,
+            "scenario": result.scenario.id,
+            "configuration_hash": result.configuration_hash,
+            "started_at": generated_at,
+        },
+    )
+    _write_json(
+        directory / "scenario.json",
+        {
+            "experiment_id": result.experiment_id,
+            "scenario_version": 1,
+            "scenario": result.scenario.model_dump(mode="json"),
+        },
+    )
     write_events_jsonl(result.events.events, directory / "events.jsonl")
     write_process_csv(result.trace.rows, directory / "process.csv")
-    _write_json(directory / "invariants.json", result.invariants)
+    _write_control_csv(result, directory / "control.csv")
+    _write_json(
+        directory / "invariants.json",
+        {"experiment_id": result.experiment_id, **result.invariants},
+    )
     _write_json(
         directory / "consequences.json",
         {
+            "experiment_id": result.experiment_id,
             **result.consequences.as_dict(),
             "critical_function": config.consequences.critical_function.model_dump(mode="json"),
         },
     )
     _write_json(directory / "metrics.json", metrics)
+    graph = scenario_consequence_graph(result.scenario)
+    _write_json(
+        directory / "graph.json",
+        {"experiment_id": result.experiment_id, **graph},
+    )
+    result_verification = verify_results(directory)
+    if not result_verification.passed:
+        msg = "; ".join(result_verification.errors)
+        raise ValueError(f"independent result verification failed: {msg}")
+    _write_json(directory / "verification.json", result_verification.as_dict())
     (directory / "summary.md").write_text(
         _render_summary(result, config, metrics), encoding="utf-8"
     )
@@ -134,6 +251,12 @@ def write_evidence(
     manifest: dict[str, Any] = {
         "experiment_id": result.experiment_id,
         "blackstart_version": result.blackstart_version,
+        "git_commit": git_commit,
+        "source_fingerprint": result.source_fingerprint,
+        "config_hash": result.configuration_hash,
+        "scenario_hash": hashlib.sha256(
+            canonical_json(result.scenario.causal_fingerprint()).encode("utf-8")
+        ).hexdigest(),
         "scenario": {
             "id": result.scenario.id,
             "name": result.scenario.name,
@@ -161,7 +284,7 @@ def write_evidence(
         # EXCLUDED from the integrity digest so that re-running an experiment
         # reproduces every artefact byte-for-byte (ADR-005).
         "provenance": {
-            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "generated_at": generated_at,
             "python": sys.version.split()[0],
             "platform": platform.platform(),
         },

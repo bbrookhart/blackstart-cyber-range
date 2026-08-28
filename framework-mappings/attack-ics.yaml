@@ -22,7 +22,9 @@ source:
   framework: "MITRE ATT&CK for ICS"
   url: "https://attack.mitre.org/matrices/ics/"
   version: "v19.2"
-  retrieved_or_verified: "2026-08-24"
+  retrieved_or_verified: "2026-08-28"
+  dataset_url: "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/v19.2/ics-attack/ics-attack-19.2.json"
+  dataset_hash: "sha256:08b83d2cea6b6d6752468ef0e62e2ab2a53c9443ef72c439ecccb07ab9e89da9"
   verification_method: >-
     Each technique identifier below was requested directly from
     attack.mitre.org on the date above and its canonical name and tactic read
@@ -61,7 +63,7 @@ mappings:
       the level of effect. BLACKSTART does not model how the parameter was
       changed.
     confidence: "high"
-    retrieved_or_verified: "2026-08-24"
+    retrieved_or_verified: "2026-08-28"
 
   - blackstart_behavior: "Process driven outside safe bounds through the control system behaving as designed"
     effect: "setpoint.override"
@@ -79,7 +81,7 @@ mappings:
       envelope. Mapped as the IMPACT of the modelled effect, distinct from the
       T0836 mapping which describes the mechanism-level change.
     confidence: "high"
-    retrieved_or_verified: "2026-08-24"
+    retrieved_or_verified: "2026-08-28"
 
   - blackstart_behavior: "Operator-facing level transmitter reports values inconsistent with physical truth"
     effect: "sensor.bias, sensor.freeze"
@@ -88,13 +90,13 @@ mappings:
     attack_tactic: "Impact"
     evidence_source:
       - "process.csv: reported_tank_level_m diverges from true_tank_level_m"
-      - "invariants.json: INV-005 violation intervals"
-      - "events.jsonl: invariant.state (INV-005) with both views in `detail`"
+      - "invariants.json: INV-006 violation intervals"
+      - "events.jsonl: invariant.state (INV-006) with both views in `detail`"
     scenario_ids: ["SCN-003"]
     rationale: >-
       The operator's view of the process is made to differ from reality in a way
       that is stable and plausible. BLACKSTART measures the divergence directly
-      via INV-005, which reads both views.
+      via INV-006, which reads both views.
     candidate_mechanisms:
       - id: "T1692.002"
         name: "Unauthorized Message: Reporting Message"
@@ -104,7 +106,7 @@ mappings:
           tampering, and historian manipulation. BLACKSTART models none of them
           and therefore does not assert this mapping.
     confidence: "high for the effect; mechanism not modelled"
-    retrieved_or_verified: "2026-08-24"
+    retrieved_or_verified: "2026-08-28"
 
   - blackstart_behavior: "Supervisory telemetry path unavailable while local control continues"
     effect: "supervisory.blackout"
@@ -129,7 +131,7 @@ mappings:
           partition, service failure and historian outage are others. Not
           asserted.
     confidence: "high for the effect; mechanism not modelled"
-    retrieved_or_verified: "2026-08-24"
+    retrieved_or_verified: "2026-08-28"
 
 # Scenarios deliberately carrying NO mapping. Recorded explicitly so that their
 # absence reads as a decision rather than an oversight.

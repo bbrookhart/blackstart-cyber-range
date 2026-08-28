@@ -87,10 +87,10 @@ windows on INV-002 and INV-003 were chosen against this scan rate.
 
 ### B4 — Instrument noise is Gaussian and small relative to the limits
 
-**Assumed.** Level transmitter σ = 0.005 m against an INV-005 tolerance of
+**Assumed.** Level transmitter σ = 0.005 m against an INV-006 tolerance of
 0.10 m.
 
-*If wrong:* Nominal operation could trip INV-005, and the clean SCN-001 baseline
+*If wrong:* Nominal operation could trip INV-006, and the clean SCN-001 baseline
 — on which every other result depends for interpretability — would degrade.
 
 ### B5 — The consequence thresholds are defensible

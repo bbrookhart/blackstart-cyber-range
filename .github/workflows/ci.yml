@@ -104,26 +104,26 @@ jobs:
       # being true.
       - name: Run the flagship comparison
         run: |
-          uv run blackstart experiment compare SCN-004 \
-            --variant backstop-disabled \
-            --variant backstop-enabled \
-            --evidence-root evidence/ci
+          uv run blackstart experiment flagship \
+            --evidence-root evidence/ci \
+            --output-dir experiments/ci/EXP-BS-001
 
       - name: Verify and independently reproduce every evidence package
         run: |
           uv run blackstart evidence verify --all --reproduce \
             --evidence-root evidence/ci
-
-      - name: Verify the committed baseline evidence still reproduces
-        run: |
-          uv run blackstart evidence verify --all --reproduce \
-            --evidence-root evidence/baseline
+          for directory in evidence/ci/EXP-*; do
+            uv run blackstart experiment verify-results "$(basename "$directory")" \
+              --evidence-root evidence/ci
+          done
 
       - name: Upload experiment evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: flagship-evidence
-          path: evidence/ci
+          path: |
+            evidence/ci
+            experiments/ci/EXP-BS-001
           if-no-files-found: error
 
   package:

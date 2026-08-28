@@ -15,6 +15,7 @@ from blackstart.core.invariants.water import (
     DryRunInvariant,
     MaximumLevelInvariant,
     MinimumReserveInvariant,
+    SetpointBoundInvariant,
     TelemetryIntegrityInvariant,
 )
 from blackstart.core.models import InvariantStatus
@@ -173,15 +174,35 @@ class TestCommandRate:
         assert sample.detail["rate_breach"] == 1.0
 
 
+class TestSetpointBound:
+    def test_accepts_boundary_values(self, config: BlackstartConfig):
+        inv = SetpointBoundInvariant(config.invariants.by_id("INV-005"))
+        sample = inv.evaluate(make_state(effective_setpoint_m=3.60), DT)
+        assert sample.status is InvariantStatus.OK
+
+    def test_rejects_an_effective_target_above_the_envelope(self, config: BlackstartConfig):
+        inv = SetpointBoundInvariant(config.invariants.by_id("INV-005"))
+        sample = inv.evaluate(make_state(requested_setpoint_m=4.80, effective_setpoint_m=4.80), DT)
+        assert sample.status is InvariantStatus.VIOLATED
+        assert sample.detail["requested_setpoint_m"] == pytest.approx(4.80)
+
+    def test_recovers_when_the_effective_target_is_constrained(self, config: BlackstartConfig):
+        inv = SetpointBoundInvariant(config.invariants.by_id("INV-005"))
+        inv.evaluate(make_state(effective_setpoint_m=4.80), DT)
+        sample = inv.evaluate(make_state(effective_setpoint_m=3.60), DT)
+        assert sample.status is InvariantStatus.OK
+        assert inv.finalise(2 * DT).violation_count == 1
+
+
 class TestTelemetryIntegrity:
     def test_ok_within_transmitter_noise(self, config: BlackstartConfig):
-        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-005"))
+        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-006"))
         sample = inv.evaluate(make_state(tank_level_m=3.20, reported_level_m=3.205), DT)
         assert sample.status is InvariantStatus.OK
 
     def test_violated_by_a_sustained_divergence(self, config: BlackstartConfig):
-        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-005"))
-        tolerance = config.invariants.by_id("INV-005").tolerance_s
+        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-006"))
+        tolerance = config.invariants.by_id("INV-006").tolerance_s
         for step in range(int(tolerance / DT) + 1):
             sample = inv.evaluate(
                 make_state(t_s=step * DT, tank_level_m=4.0, reported_level_m=2.5), DT
@@ -191,7 +212,7 @@ class TestTelemetryIntegrity:
     def test_evaluates_truth_against_report_not_report_alone(self, config: BlackstartConfig):
         """The evidence model must not be falsifiable by the same effect that
         falsifies the operator view."""
-        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-005"))
+        inv = TelemetryIntegrityInvariant(config.invariants.by_id("INV-006"))
         sample = inv.evaluate(make_state(tank_level_m=4.9, reported_level_m=3.2), DT)
         assert sample.detail["true_level_m"] == pytest.approx(4.9)
         assert sample.detail["reported_level_m"] == pytest.approx(3.2)

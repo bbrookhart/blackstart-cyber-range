@@ -27,6 +27,7 @@ class TestConstruction:
             "INV-003",
             "INV-004",
             "INV-005",
+            "INV-006",
         }
         assert set(consequence_graph.nodes_of_class("Consequence")) == {f"C{n}" for n in range(6)}
 

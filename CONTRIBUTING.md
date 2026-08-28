@@ -101,7 +101,8 @@ Before opening a pull request:
 
 ```bash
 make lint typecheck test coverage audit
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/baseline
+make clean-results experiment
+uv run blackstart evidence verify --all --reproduce --evidence-root evidence/local
 ```
 
 ### Code standards

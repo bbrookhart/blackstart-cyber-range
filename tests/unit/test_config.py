@@ -23,7 +23,7 @@ pytestmark = pytest.mark.unit
 class TestShippedConfiguration:
     def test_loads_and_cross_validates(self, config: BlackstartConfig):
         assert config.process.process_id == "WTR-001"
-        assert len(config.invariants.invariants) == 5
+        assert len(config.invariants.invariants) == 6
         assert len(config.consequences.consequences) == 6
 
     def test_is_immutable(self, config: BlackstartConfig):

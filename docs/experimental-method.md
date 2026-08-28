@@ -8,7 +8,8 @@ believable.
 ## The determinism contract
 
 ```text
-(blackstart_version, configuration, seed)  ──►  experiment result
+(simulator version, source fingerprint, configuration, scenario, seed)
+  ──► experiment result
 ```
 
 Guaranteed by: a fixed timestep; no wall-clock read in the kernel; a single
@@ -73,14 +74,19 @@ anything else, the comparison would be measuring two differences instead of one.
 ## The evidence package
 
 ```text
-evidence/<root>/EXP-SCN004-backstop-enabled-457bc4c1/
-├── manifest.json       provenance, seed, config hash, artefact digests
+evidence/<root>/EXP-SCN004-backstop-enabled-<identity>/
+├── manifest.json       provenance, source/config/scenario hashes, artifact digests
+├── environment.json    Python, OS, architecture, image, seed
 ├── configuration.json  the fully resolved configuration actually executed
+├── scenario.json       exact scenario document
 ├── events.jsonl        ordered structured event stream
 ├── process.csv         per-timestep true AND reported state
-├── invariants.json     per-invariant outcome, intervals, peak excursion
+├── control.csv         requested/effective target, decision, physical level
+├── invariants.json     every evaluation plus intervals and peak excursion
 ├── consequences.json   consequence timeline and maximum severity
 ├── metrics.json        computed research metrics
+├── graph.json          machine-readable causal path
+├── verification.json   independent metric calculation
 └── summary.md          human-readable account, with its own limitations
 ```
 
@@ -98,18 +104,19 @@ columns simply stop agreeing.
 
 ```bash
 # Structural + cryptographic integrity
-uv run blackstart evidence verify --all --evidence-root evidence/baseline
+uv run blackstart evidence verify --all --evidence-root evidence/local
 
 # Independent reproduction: re-execute and diff byte-for-byte
-uv run blackstart evidence verify --all --reproduce --evidence-root evidence/baseline
+uv run blackstart evidence verify --all --reproduce --evidence-root evidence/local
 ```
 
 `verify` recomputes every artefact digest and the top-level integrity digest, and
 fails on a missing file *or* an unexpected extra one.
 
 `--reproduce` re-executes the experiment from the recorded configuration and seed
-and compares every artefact byte-for-byte, ignoring only the manifest's wall-clock
-provenance. This is the strongest reproducibility claim v0.1 makes.
+and compares deterministic artifacts byte-for-byte. Environment and manifest
+provenance are structurally checked because the wall clock and git revision of a
+reproduction may legitimately differ.
 
 **Integrity is tamper-evidence, not tamper-proofing.** Anyone who can edit the
 artefacts can recompute the manifest. It defends against corruption, partial

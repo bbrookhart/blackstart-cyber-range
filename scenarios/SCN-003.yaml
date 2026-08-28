@@ -50,11 +50,11 @@ notes: >-
 expected:
   backstop_disabled:
     maximum_consequence: "C4"
-    violated_invariants: ["INV-001", "INV-005"]
+    violated_invariants: ["INV-001", "INV-006"]
     service_availability_pct_min: 46.0
     service_availability_pct_max: 47.5
   backstop_enabled:
     maximum_consequence: "C1"
-    violated_invariants: ["INV-004", "INV-005"]
+    violated_invariants: ["INV-004", "INV-006"]
     service_availability_pct_min: 99.9
     service_availability_pct_max: 100.0

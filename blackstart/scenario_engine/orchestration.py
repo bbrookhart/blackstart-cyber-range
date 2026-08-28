@@ -28,7 +28,10 @@ event (ADR-005).
 from __future__ import annotations
 
 import copy
+import hashlib
 from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
 from random import Random
 from typing import Any
 
@@ -58,6 +61,7 @@ __all__ = [
     "ExperimentRunner",
     "Variant",
     "resolve_variant",
+    "source_fingerprint",
 ]
 
 #: Interval at which periodic process telemetry is emitted to the event stream.
@@ -70,6 +74,26 @@ _ASSET_TANK = "TNK-001"
 _ASSET_PUMP = "PMP-001"
 _ASSET_BACKSTOP = "EBS-001"
 _ASSET_LEVEL_TX = "LIT-001"
+
+
+@lru_cache(maxsize=1)
+def source_fingerprint() -> str:
+    """Hash the executable research kernel and its resolved configuration.
+
+    Git commits are recorded as environment provenance, but a commit cannot be
+    part of a package that is committed by that same commit. This content hash
+    is the non-circular code revision used in experiment identity. Documentation
+    and generated evidence are intentionally excluded.
+    """
+    root = Path(__file__).resolve().parents[2]
+    paths = sorted((root / "blackstart").rglob("*.py")) + sorted((root / "configs").glob("*.yaml"))
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +164,7 @@ class ExperimentResult:
     seed: int
     blackstart_version: str
     configuration_hash: str
+    source_fingerprint: str
     duration_s: float
     timestep_s: float
     step_count: int
@@ -190,6 +215,7 @@ class ExperimentRunner:
         # The code version participates in the hash: a result is a function of
         # (version, configuration, seed), so two releases must not be able to
         # claim the same experiment identifier for different behaviour (ADR-005).
+        self._source_fingerprint = source_fingerprint()
         self._config_hash = configuration_hash(
             config,
             extra={
@@ -197,6 +223,7 @@ class ExperimentRunner:
                 "variant": variant.name,
                 "seed": self._seed,
                 "blackstart_version": __version__,
+                "source_fingerprint": self._source_fingerprint,
             },
         )
         self._experiment_id = (
@@ -265,6 +292,7 @@ class ExperimentRunner:
                     "duration_s": self._scenario.duration_s,
                     "timestep_s": dt_s,
                     "blackstart_version": __version__,
+                    "source_fingerprint": self._source_fingerprint,
                     "configuration_hash": self._config_hash,
                 },
             )
@@ -488,6 +516,7 @@ class ExperimentRunner:
                     spill_volume_m3=truth.spill_volume_m3,
                     pump_energised=int(truth.pump_energised),
                     pump_permitted=int(decision.pump_permitted),
+                    pump_command=int(request.pump_run),
                     valve_position=truth.valve_position,
                     requested_setpoint_m=setpoint.requested_m,
                     effective_setpoint_m=decision.effective_setpoint_m,
@@ -530,6 +559,7 @@ class ExperimentRunner:
             seed=self._seed,
             blackstart_version=__version__,
             configuration_hash=self._config_hash,
+            source_fingerprint=self._source_fingerprint,
             duration_s=self._scenario.duration_s,
             timestep_s=dt_s,
             step_count=step_count,

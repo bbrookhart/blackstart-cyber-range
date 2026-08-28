@@ -121,6 +121,24 @@ def check_adrs(failures: list[str]) -> None:
             failures.append(f"ADR-{number} is missing")
 
 
+def check_readme_results(failures: list[str]) -> None:
+    """Require the README result card to match the generated release table."""
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    table_path = REPO_ROOT / "experiments" / "releases" / "v0.1.0" / "results-table.md"
+    if not table_path.is_file():
+        failures.append("canonical EXP-BS-001 results table is missing")
+        return
+    table = table_path.read_text(encoding="utf-8").strip()
+    start = "<!-- BEGIN GENERATED EXP-BS-001 RESULTS -->"
+    end = "<!-- END GENERATED EXP-BS-001 RESULTS -->"
+    if readme.count(start) != 1 or readme.count(end) != 1:
+        failures.append("README EXP-BS-001 result markers are missing or duplicated")
+        return
+    generated = readme.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
+    if table not in generated:
+        failures.append("README EXP-BS-001 metrics differ from canonical generated results")
+
+
 def main() -> int:
     """Run every check and report."""
     failures: list[str] = []
@@ -131,6 +149,7 @@ def main() -> int:
         ("work markers", check_markers),
         ("effect vocabulary", check_effect_vocabulary),
         ("architecture decision records", check_adrs),
+        ("README result consistency", check_readme_results),
     )
     for name, check in checks:
         before = len(failures)

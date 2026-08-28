@@ -55,7 +55,7 @@ The single most load-bearing decision in the project.
 - `TruthState` — what physically happened. Invariants read this.
 - `ReportedState` — what the control system and operator believed. The controller
   reads this.
-- Only INV-005 reads both, and only to compare them.
+- Only INV-006 reads both, and only to compare them.
 
 Two consequences follow, and both are what make the results legible:
 
@@ -111,7 +111,7 @@ and the classifier reaches it without being told.
 The project deliberately keeps findings that complicate its own argument:
 
 - the constraint preserves the process but not the operator's understanding of it
-  (SCN-003, INV-005 violated in both variants);
+  (SCN-003, INV-006 violated in both variants);
 - an engineered control can relocate a consequence rather than remove it
   (SCN-006: pump saved, service still lost — no control on the command path can
   create water);
@@ -130,8 +130,8 @@ identifiers are **derived from that triple**, so re-running reproduces the
 evidence package byte-for-byte including the identifier embedded in every event.
 
 `blackstart evidence verify --reproduce` re-executes from the recorded
-configuration and diffs the artefacts. CI runs it on every change, including
-against the committed baseline.
+configuration and diffs every deterministic artifact. CI generates the complete
+flagship package and runs the same check on every change.
 
 If a result cannot be re-derived, it is not a result.
 

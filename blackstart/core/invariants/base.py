@@ -66,6 +66,17 @@ class InvariantSample:
         """Whether this sample records a violation."""
         return self.status is InvariantStatus.VIOLATED
 
+    def as_dict(self) -> dict[str, Any]:
+        """Serialise the machine-readable evaluation record."""
+        return {
+            "invariant_id": self.invariant_id,
+            "timestamp": round(self.t_s, 3),
+            "status": self.status.value,
+            "observed_value": round(self.value, 6),
+            "threshold": self.limit,
+            "detail": {key: round(value, 6) for key, value in sorted(self.detail.items())},
+        }
+
 
 @dataclass(slots=True)
 class ViolationInterval:

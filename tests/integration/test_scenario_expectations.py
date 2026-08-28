@@ -181,7 +181,7 @@ class TestTelemetryIntegrityClaims:
         telemetry, and the results must not suggest otherwise.
         """
         for variant in VARIANTS:
-            assert "INV-005" in measured[("SCN-003", variant)]["violated_invariants"]
+            assert "INV-006" in measured[("SCN-003", variant)]["violated_invariants"]
 
 
 class TestVisibilityClaims:

@@ -82,7 +82,7 @@ Test
       ↓  test_effective_setpoint_never_leaves_the_permitted_range (property-based)
       ↓  test_pump_is_never_permitted_above_the_trip_level (property-based)
 Evidence
-      ↓  evidence/baseline/EXP-SCN004-*/invariants.json
+      ↓  experiments/releases/v0.1.0/evidence/EXP-SCN004-*/invariants.json
 Framework reference
          NIST SP 800-82r3 architecture and risk principles; CSF 2.0 Protect
 ```

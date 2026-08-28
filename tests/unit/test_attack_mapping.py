@@ -47,6 +47,20 @@ class TestProvenance:
         assert source["retrieved_or_verified"]
         assert source["url"].startswith("https://attack.mitre.org")
 
+    def test_official_dataset_is_version_pinned_and_hashed(self, mappings, request):
+        root = Path(request.config.rootpath)
+        pin = yaml.safe_load(
+            (root / "framework-mappings" / "attack-dataset.yaml").read_text(encoding="utf-8")
+        )
+        assert pin["framework"] == "MITRE ATT&CK"
+        assert pin["domain"] == "ICS"
+        assert f"v{pin['version']}" == mappings["source"]["version"]
+        assert pin["retrieved_at"] == mappings["source"]["retrieved_or_verified"]
+        assert pin["dataset_hash"].startswith("sha256:")
+        assert len(pin["dataset_hash"].removeprefix("sha256:")) == 64
+        assert pin["dataset_hash"] == mappings["source"]["dataset_hash"]
+        assert pin["dataset_bytes"] > 0
+
     def test_every_mapping_records_its_own_verification_date(self, mappings):
         for entry in mappings["mappings"]:
             assert entry["retrieved_or_verified"]
